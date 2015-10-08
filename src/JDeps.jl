@@ -51,9 +51,12 @@ function install()
 end
 
 function freeze()
-  for pkg in readdir(Pkg.dir())
-    println(pkg)
+  deps = Array{Dep,1}()
+  for (pkg, version) in Pkg.installed()
+    Pkg.pin(pkg, version)
+    push!(deps, Dep(pkg, string(version)))
   end
+  writedeps(deps)
 end
 
 end # module
