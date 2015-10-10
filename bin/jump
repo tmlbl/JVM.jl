@@ -1,0 +1,39 @@
+#!/usr/bin/env julia
+
+using JDeps
+
+print_help() = println(join([
+  "Help!",
+  "install   =>  Install all dependencies"
+], '\n'))
+
+if length(ARGS) == 0
+  print_help()
+  exit()
+end
+
+if ARGS[1] == "install"
+  JDeps.install()
+elseif ARGS[1] == "run"
+  file = length(ARGS) > 1 ? ARGS[length(ARGS)] : ""
+  if file == ""
+  else
+    include(joinpath(pwd(), ARGS[2]))
+  end
+elseif ARGS[1] == "init"
+  JDeps.init()
+elseif ARGS[1] == "add"
+  pkg = length(ARGS) > 1 ? ARGS[2] : ""
+  version = length(ARGS) > 2 ? ARGS[3] : ""
+  if version == ""
+    JDeps.add(pkg)
+  else
+    JDeps.add(pkg, version)
+  end
+elseif ARGS[1] == "freeze"
+  JDeps.freeze()
+elseif ARGS[1] == "update"
+  JDeps.update()
+else
+  print_help()
+end
