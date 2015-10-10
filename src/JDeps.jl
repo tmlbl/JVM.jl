@@ -1,6 +1,6 @@
 module JDeps
 
-isgit(str::AbstractString) = ismatch(r"[\@|https]", str)
+isgit(str::AbstractString) = ismatch(r"^https|\@", str)
 
 namefromgit(url::AbstractString) = begin
   pkg_name = string(match(r"([^/]+$)", url).match)
@@ -36,8 +36,18 @@ function getdeps()
   map((line) -> Dep(split(line)...), readlines(open("JDEPS")))
 end
 
+Base.isless(d1::JDeps.Dep, d2::JDeps.Dep) = isless(d1.name, d2.name)
+
 function writedeps(deps::Array{Dep})
-  write(open("JDEPS", "w"), join(map((dep) -> "$(dep.name) $(dep.version)", deps), '\n'))
+  write(open("JDEPS", "w"), join(map((dep) -> "$(dep.name) $(dep.version)", sort(deps)), '\n'))
+end
+
+function getsha(pkg::AbstractString)
+  chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) rev-parse HEAD`))
+end
+
+function geturl(pkg::AbstractString)
+  chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) config --get remote.origin.url`))
 end
 
 function add(pkg::AbstractString)
@@ -53,8 +63,9 @@ function add(pkg::AbstractString)
     # Going to guess this is a url
     Pkg.clone(pkg)
     pkg_name = namefromgit(pkg)
-    git_cmd = Pkg.Git.git(Pkg.dir(pkg_name))
-    sha = chomp(readall(`$git_cmd rev-parse HEAD`))
+    # git_cmd = Pkg.Git.git(Pkg.dir(pkg_name))
+    # sha = chomp(readall(`$git_cmd rev-parse HEAD`))
+    sha = getsha(pkg)
     push!(deps, Dep(pkg, sha))
   else
     Pkg.add(pkg)
@@ -106,10 +117,14 @@ end
 function freeze()
   deps = Array{Dep,1}()
   for (pkg, version) in Pkg.installed()
-    if VersionNumber(version) != v"0.0.0-"
+    if VersionNumber(version) == v"0.0.0-"
+      sha = getsha(pkg)
+      info("Freezing $pkg at $sha")
+      push!(deps, Dep(geturl(pkg), sha))
+    else
       Pkg.pin(pkg, version)
+      push!(deps, Dep(pkg, string(version)))
     end
-    push!(deps, Dep(pkg, string(version)))
   end
   written = writedeps(deps)
 end
