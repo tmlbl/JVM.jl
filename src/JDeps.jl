@@ -6,7 +6,7 @@ local_dir = ""
 
 # Localize the package directory
 function __init__()
-  global local_dir = joinpath(pwd(), ".jvm")
+  global local_dir = joinpath(pwd(), ".jdeps")
   info("Setting JULIA_PKGDIR to $local_dir")
   ENV["JULIA_PKGDIR"] = local_dir
 end
@@ -25,8 +25,22 @@ end
 getsha(pkg::AbstractString) =
   chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) rev-parse HEAD`))
 
+checkout(pkg::AbstractString, sha::AbstractString) =
+  chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) git checkout $sha`))
+
 geturl(pkg::AbstractString) =
   chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) config --get remote.origin.url`))
+
+getinstalled() =
+  map((p) -> if p[2] == v"0.0.0-" Dep(p[1], getsha(p[1])) else Dep(p[1], string(p[2])) end,
+  Pkg.installed())
+
+rmrequire() = begin
+  reqpath = joinpath(Pkg.dir(), "REQUIRE")
+  if isfile(reqpath)
+    rm(reqpath)
+  end
+end
 
 # The "Dep" type
 # name: (registered) Name of package or (unregistered) git or https url
@@ -44,6 +58,8 @@ function getdeps()
   map((line) -> Dep(split(line)...), readlines(open("JDEPS")))
 end
 
+getdep(n::AbstractString) = find((d) -> d.name == n, getdeps())
+
 function writedeps(deps::Array{Dep})
   write(open("JDEPS", "w"), join(map((dep) -> "$(dep.name) $(dep.version)", sort(deps)), '\n'))
 end
@@ -51,37 +67,46 @@ end
 # Commands
 
 function init()
-  if !isdir(local_dir)
-    mkdir(local_dir)
-  end
-  ENV["JULIA_PKGDIR"] = local_dir
-  touch("JDEPS")
+  if !isdir(local_dir) mkdir(local_dir) end
+  if !isfile("JDEPS") touch("JDEPS") end
   Pkg.init()
-  reqpath = joinpath(Pkg.dir(), "REQUIRE")
-  if isfile(reqpath)
-    rm(reqpath)
-  end
+  rmrequire()
 end
 
-function add(pkg::AbstractString)
+function resolve()
   deps = getdeps()
-  if length(deps) == 0
-    deps = Array{Dep,1}()
-  end
+  pkgs = getinstalled()
 
+end
+
+function freeze()
+  deps = Array{Dep,1}()
+  for (pkg, version) in Pkg.installed()
+    if VersionNumber(version) == v"0.0.0-"
+      sha = getsha(pkg)
+      info("Freezing $pkg at $sha")
+      push!(deps, Dep(geturl(pkg), sha))
+    else
+      Pkg.pin(pkg, version)
+      push!(deps, Dep(pkg, string(version)))
+    end
+  end
+  written = writedeps(deps)
+  rmrequire()
+end
+
+function add(pkg::AbstractString, v::AbstractString)
   if isgit(pkg)
     Pkg.clone(pkg)
-    pkg_name = namefromgit(pkg)
-    sha = getsha(pkg)
-    push!(deps, Dep(pkg, sha))
+    if v != "" checkout(v) end
   else
-    Pkg.add(pkg)
-    push!(deps, Dep(pkg, string(Pkg.installed(pkg))))
-    Pkg.pin(pkg)
+    if v != "" Pkg.add(pkg, VersionNumber(v)) else Pkg.add(pkg) end
+    if v != "" Pkg.pin(pkg, VersionNumber(v)) else Pkg.pin(pkg) end
   end
-
-  writedeps(deps)
+  freeze()
 end
+
+add(pkg::AbstractString) = add(pkg, "")
 
 function install_registered(dep::Dep)
   version = v"0.0.0-"
@@ -91,6 +116,7 @@ function install_registered(dep::Dep)
     Pkg.add(dep.name, VersionNumber(dep.version))
   end
   if version != VersionNumber(dep.version) && version != v"0.0.0-"
+    println("pinning $(dep.name) at $(dep.version)")
     Pkg.pin(dep.name, VersionNumber(dep.version))
   end
 end
@@ -98,8 +124,7 @@ end
 function install_unregistered(dep::Dep)
   name = namefromgit(dep.name)
   if isdir(Pkg.dir(name))
-    git_cmd = Pkg.Git.git(Pkg.dir(name))
-    run(`$git_cmd checkout $(dep.version)`)
+    checkout(dep.version)
   else
     Pkg.clone(dep.name)
   end
@@ -121,24 +146,11 @@ function install()
   end
 end
 
-function freeze()
-  deps = Array{Dep,1}()
-  for (pkg, version) in Pkg.installed()
-    if VersionNumber(version) == v"0.0.0-"
-      sha = getsha(pkg)
-      info("Freezing $pkg at $sha")
-      push!(deps, Dep(geturl(pkg), sha))
-    else
-      Pkg.pin(pkg, version)
-      push!(deps, Dep(pkg, string(version)))
-    end
-  end
-  written = writedeps(deps)
-end
-
 function update()
   metapath = joinpath(Pkg.dir(), "METADATA")
   run(`git -C $metapath pull origin metadata-v2`)
+  rmrequire()
+  install()
 end
 
 function package()
