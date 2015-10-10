@@ -1,19 +1,54 @@
+__precompile__()
+
 module JDeps
+
+local_dir = ""
+
+# Localize the package directory
+function __init__()
+  global local_dir = joinpath(pwd(), ".jvm")
+  info("Setting JULIA_PKGDIR to $local_dir")
+  ENV["JULIA_PKGDIR"] = local_dir
+end
+
+# Utils
 
 isgit(str::AbstractString) = ismatch(r"^https|\@", str)
 
 namefromgit(url::AbstractString) = begin
-  pkg_name = string(match(r"([^/]+$)", url).match)
-  pkg_name = replace(pkg_name, ".jl", "")
-  pkg_name = replace(pkg_name, ".git", "")
-  pkg_name
+  n = string(match(r"([^/]+$)", url).match)
+  n = replace(n, ".jl", "")
+  n = replace(n, ".git", "")
+  n
 end
 
-# The alternative package dir
-user_pkgdir = Pkg.dir()
-local_dir = joinpath(pwd(), ".jdeps")
-info("Setting JULIA_PKGDIR to $local_dir")
-ENV["JULIA_PKGDIR"] = local_dir
+getsha(pkg::AbstractString) =
+  chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) rev-parse HEAD`))
+
+geturl(pkg::AbstractString) =
+  chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) config --get remote.origin.url`))
+
+# The "Dep" type
+# name: (registered) Name of package or (unregistered) git or https url
+# version: (registered) Version tag or (unregistered) branch, sha, version tag
+type Dep
+  name::AbstractString
+  version::AbstractString
+end
+
+Base.isless(d1::JDeps.Dep, d2::JDeps.Dep) = isless(d1.name, d2.name)
+
+# Functions for reading and writing to deps file
+
+function getdeps()
+  map((line) -> Dep(split(line)...), readlines(open("JDEPS")))
+end
+
+function writedeps(deps::Array{Dep})
+  write(open("JDEPS", "w"), join(map((dep) -> "$(dep.name) $(dep.version)", sort(deps)), '\n'))
+end
+
+# Commands
 
 function init()
   if !isdir(local_dir)
@@ -22,49 +57,21 @@ function init()
   ENV["JULIA_PKGDIR"] = local_dir
   touch("JDEPS")
   Pkg.init()
-  rm(joinpath(Pkg.dir(), "REQUIRE"))
-end
-
-# (registered) Name of package or (unregistered) git or https url
-type Dep
-  name::AbstractString
-  version::AbstractString
-end
-
-# Read the DEPS file
-function getdeps()
-  map((line) -> Dep(split(line)...), readlines(open("JDEPS")))
-end
-
-Base.isless(d1::JDeps.Dep, d2::JDeps.Dep) = isless(d1.name, d2.name)
-
-function writedeps(deps::Array{Dep})
-  write(open("JDEPS", "w"), join(map((dep) -> "$(dep.name) $(dep.version)", sort(deps)), '\n'))
-end
-
-function getsha(pkg::AbstractString)
-  chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) rev-parse HEAD`))
-end
-
-function geturl(pkg::AbstractString)
-  chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) config --get remote.origin.url`))
+  reqpath = joinpath(Pkg.dir(), "REQUIRE")
+  if isfile(reqpath)
+    rm(reqpath)
+  end
 end
 
 function add(pkg::AbstractString)
-  if !isfile("JDEPS")
-    touch("JDEPS")
-  end
   deps = getdeps()
   if length(deps) == 0
     deps = Array{Dep,1}()
   end
 
   if isgit(pkg)
-    # Going to guess this is a url
     Pkg.clone(pkg)
     pkg_name = namefromgit(pkg)
-    # git_cmd = Pkg.Git.git(Pkg.dir(pkg_name))
-    # sha = chomp(readall(`$git_cmd rev-parse HEAD`))
     sha = getsha(pkg)
     push!(deps, Dep(pkg, sha))
   else
@@ -132,6 +139,10 @@ end
 function update()
   metapath = joinpath(Pkg.dir(), "METADATA")
   run(`git -C $metapath pull origin metadata-v2`)
+end
+
+function package()
+
 end
 
 end # module

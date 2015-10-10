@@ -3,8 +3,12 @@
 using JDeps
 
 print_help() = println(join([
-  "Help!",
-  "install   =>  Install all dependencies"
+  "\ninstall    =>  Install all dependencies",
+  "run [file] =>  Execute a Julia file in the current context",
+  "init       =>  Create a local package directory",
+  "freeze     =>  Save the current state to the dependencies file",
+  "update     =>  Update METADATA for the local package directory",
+  "add [name or URL] [version or SHA]  =>  Add a dependency\n"
 ], '\n'))
 
 if length(ARGS) == 0
