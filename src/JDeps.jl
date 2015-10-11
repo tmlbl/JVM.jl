@@ -109,12 +109,10 @@ end
 add(pkg::AbstractString) = add(pkg, "")
 
 function install_registered(dep::Dep)
-  version = v"0.0.0-"
-  if isdir(Pkg.dir(dep.name))
-    version = Pkg.installed(dep.name)
-  else
+  if !isdir(Pkg.dir(dep.name))
     Pkg.add(dep.name, VersionNumber(dep.version))
   end
+  version = Pkg.installed(dep.name)
   if version != VersionNumber(dep.version) && version != v"0.0.0-"
     println("pinning $(dep.name) at $(dep.version)")
     Pkg.pin(dep.name, VersionNumber(dep.version))
