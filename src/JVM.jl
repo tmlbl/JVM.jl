@@ -1,6 +1,6 @@
 __precompile__()
 
-module JDeps
+module JVM
 
 local_dir = ""
 
@@ -50,7 +50,7 @@ type Dep
   version::AbstractString
 end
 
-Base.isless(d1::JDeps.Dep, d2::JDeps.Dep) = isless(d1.name, d2.name)
+Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
 
 # Functions for reading and writing to deps file
 
