@@ -26,14 +26,23 @@ getsha(pkg::AbstractString) =
   chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) rev-parse HEAD`))
 
 checkout(pkg::AbstractString, sha::AbstractString) =
-  chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) git checkout $sha`))
+  chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) checkout $sha`))
 
 geturl(pkg::AbstractString) =
   chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) config --get remote.origin.url`))
 
-getinstalled() =
-  map((p) -> if p[2] == v"0.0.0-" Dep(p[1], getsha(p[1])) else Dep(p[1], string(p[2])) end,
-  Pkg.installed())
+# Get the current state
+function installed()
+  deps = Array{Dep,1}()
+  for p in Pkg.installed()
+     push!(deps, if p[2] == v"0.0.0-"
+       Dep(geturl(p[1]), getsha(p[1]))
+     else
+       Dep(p[1], string(p[2]))
+     end)
+  end
+  deps
+end
 
 rmrequire() = begin
   reqpath = joinpath(Pkg.dir(), "REQUIRE")
@@ -73,32 +82,15 @@ function init()
   rmrequire()
 end
 
-function resolve()
-  deps = getdeps()
-  pkgs = getinstalled()
-
-end
-
 function freeze()
-  deps = Array{Dep,1}()
-  for (pkg, version) in Pkg.installed()
-    if VersionNumber(version) == v"0.0.0-"
-      sha = getsha(pkg)
-      info("Freezing $pkg at $sha")
-      push!(deps, Dep(geturl(pkg), sha))
-    else
-      Pkg.pin(pkg, version)
-      push!(deps, Dep(pkg, string(version)))
-    end
-  end
-  written = writedeps(deps)
+  writedeps(installed())
   rmrequire()
 end
 
 function add(pkg::AbstractString, v::AbstractString)
   if isgit(pkg)
     Pkg.clone(pkg)
-    if v != "" checkout(v) end
+    if v != "" checkout(namefromgit(pkg), v) end
   else
     if v != "" Pkg.add(pkg, VersionNumber(v)) else Pkg.add(pkg) end
     if v != "" Pkg.pin(pkg, VersionNumber(v)) else Pkg.pin(pkg) end
@@ -122,7 +114,7 @@ end
 function install_unregistered(dep::Dep)
   name = namefromgit(dep.name)
   if isdir(Pkg.dir(name))
-    checkout(dep.version)
+    checkout(namefromgit(dep.name), dep.version)
   else
     Pkg.clone(dep.name)
   end
@@ -145,14 +137,15 @@ function install()
 end
 
 function update()
-  metapath = joinpath(Pkg.dir(), "METADATA")
-  run(`git -C $metapath pull origin metadata-v2`)
-  rmrequire()
-  install()
+  mv("JDEPS", "/tmp/JDEPS.bak"; remove_destination=true)
+  Pkg.update()
+  freeze()
+  info("Local package directory updated. Run 'jvm revert' to restore the previous state")
 end
 
-function package()
-
+function revert()
+  mv("/tmp/JDEPS.bak", "JDEPS"; remove_destination=true)
+  install()
 end
 
 end # module

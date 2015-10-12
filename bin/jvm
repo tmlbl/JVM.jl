@@ -3,13 +3,16 @@
 using JVM
 
 print_help() = println(join([
-  "\ninstall    =>  Install all dependencies",
+  "",
+  "install      =>  Install all dependencies",
   "run [file]   =>  Execute a Julia file in the current context",
   "load [file]  =>  Start the Julia REPL in the current context",
   "init         =>  Create a local package directory",
   "freeze       =>  Save the current state to the dependencies file",
-  "update       =>  Update METADATA for the local package directory",
-  "add [name or URL] [version or SHA]  =>  Add a dependency\n"
+  "update       =>  Pull new versions of all packages",
+  "revert       =>  Restore previous state after running 'jvm update'",
+  "add [name or URL] [version or SHA]  =>  Add a dependency",
+  ""
 ], '\n'))
 
 if length(ARGS) == 0
@@ -41,6 +44,8 @@ elseif ARGS[1] == "update"
   JVM.update()
 elseif ARGS[1] == "load"
   if length(ARGS) < 2 run(`julia`) else run(`julia -L $(ARGS[2])`) end
+elseif ARGS[1] == "revert"
+  JVM.revert()
 else
   print_help()
 end
