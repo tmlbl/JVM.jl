@@ -28,6 +28,9 @@ getsha(pkg::AbstractString) =
 checkout(pkg::AbstractString, sha::AbstractString) =
   chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) checkout $sha`))
 
+gitclean(pkg::AbstractString) =
+  run(`$(Pkg.Git.git(Pkg.dir(pkg))) clean -dfxq`)
+
 geturl(pkg::AbstractString) =
   chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) config --get remote.origin.url`))
 
@@ -146,6 +149,16 @@ end
 function revert()
   mv("/tmp/JDEPS.bak", "JDEPS"; remove_destination=true)
   install()
+end
+
+function package()
+  cp(".jdeps", "/tmp/.jdeps.pkg"; remove_destination=true)
+  ENV["JULIA_PKGDIR"] = "/tmp/.jdeps.pkg"
+  for p in Pkg.installed()
+    gitclean(p[1])
+  end
+  run(`tar -czf julia_pkgs.tar.gz -C /tmp .jdeps.pkg`)
+  ENV["JULIA_PKGDIR"] = local_dir
 end
 
 end # module
