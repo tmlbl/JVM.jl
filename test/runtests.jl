@@ -1,19 +1,19 @@
-using JDeps,
+using JVM,
       Base.Test
 
-@test !JDeps.isgit("Compat")
-@test !JDeps.isgit("AppConf")
-@test JDeps.isgit("git@github.com:tmlbl/AppConf.jl")
-@test JDeps.isgit("https://github.com/tmlbl/AppConf.jl")
-@test JDeps.namefromgit("git@github.com:tmlbl/AppConf.jl.git") == "AppConf"
-@test JDeps.namefromgit("https://github.com/tmlbl/AppConf.jl") == "AppConf"
+@test !JVM.isgit("Compat")
+@test !JVM.isgit("AppConf")
+@test JVM.isgit("git@github.com:tmlbl/AppConf.jl")
+@test JVM.isgit("https://github.com/tmlbl/AppConf.jl")
+@test JVM.namefromgit("git@github.com:tmlbl/AppConf.jl.git") == "AppConf"
+@test JVM.namefromgit("https://github.com/tmlbl/AppConf.jl") == "AppConf"
 
-JDeps.init()
+JVM.init()
 
 @test isdir(".jdeps")
 @test isfile("JDEPS")
 
-JDeps.add("AppConf", "0.0.3")
+JVM.add("AppConf", "0.0.3")
 
 @test Pkg.installed("AppConf") == v"0.0.3"
 
