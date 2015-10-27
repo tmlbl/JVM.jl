@@ -29,7 +29,7 @@ directory. Or, you can use the built-in shortcut to temporarily reassign
 
 Running `jvm package` will create a `julia_pkgs.tar.gz` of unbuilt packages that
 can then be copied to and built on a target machine, or built inside a Docker
-container to create a _Julia_Virtual_Machine_.
+container to create a _Julia Virtual Machine_.
 
 ```bash
 ~$ jvm init
