@@ -12,7 +12,8 @@ Run `jvm init` in your project directory to create a `.jdeps` directory and a
 ```bash
 ~$ jvm add AppConf 0.0.3 # Add v0.0.3 of the AppConf package
 ~$ jvm add HttpCommon # Leave the version out to install the current version
-~$ jvm add git@github.com:tmlbl/Oanda.jl.git # You can add unregistered packages as well
+# You can add unregistered packages as well
+~$ jvm add git@github.com:tmlbl/Oanda.jl.git
 ```
 
 Registered packages will be tracked by their version numbers. Unregistered
