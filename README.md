@@ -27,7 +27,29 @@ directory. Or, you can use the built-in shortcut to temporarily reassign
 ~$ jvm run app.jl
 ```
 
-Run `jvm` with no arguments to see help information.
+Running `jvm package` will create a `julia_pkgs.tar.gz` of unbuilt packages that
+can then be copied to and built on a target machine, or built inside a Docker
+container to create a _Julia_Virtual_Machine_.
 
-TODO: Add a "package" command that will run `git clean -dfx` on all packages and
-create a tarball that can be used to deploy the project.
+```bash
+~$ jvm init
+~$ jvm add LevelDB
+~$ jvm package
+```
+
+Dockerfile:
+```dockerfile
+FROM julia:0.4.0
+
+RUN apt-get update
+RUN apt-get install -y wget build-essential libsnappy-dev
+
+ADD . /opt/src
+WORKDIR /opt/src
+RUN tar xvf julia_pkgs.tar.gz
+ENV JULIA_PKGDIR /opt/src/.jdeps.pkg
+RUN julia -e "Pkg.build()"
+ENTRYPOINT julia /opt/src/script.jl
+```
+
+Run `jvm` with no arguments to see help information.

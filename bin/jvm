@@ -11,6 +11,7 @@ print_help() = println(join([
   "freeze       =>  Save the current state to the dependencies file",
   "update       =>  Pull new versions of all packages",
   "revert       =>  Restore previous state after running 'jvm update'",
+  "package      =>  Creates a tarball of unbuilt package sources",
   "add [name or URL] [version or SHA]  =>  Add a dependency",
   ""
 ], '\n'))
