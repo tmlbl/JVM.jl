@@ -10,8 +10,8 @@ function __init__()
   info("Setting JULIA_PKGDIR to $local_dir")
   ENV["JULIA_PKGDIR"] = local_dir
   # Hack to fix the library load path.
-  # TODO: Seek alternative approaches -- depends on Julia internals for precompilation.
-  VERSION >= v"0.4.0-" && (Base.LOAD_CACHE_PATH[1] = local_dir*"/lib/v0.4")
+  Base.LOAD_CACHE_PATH[1] =
+    joinpath(local_dir, "lib/v$(VERSION.major).$(VERSION.minor)")
 end
 
 # Utils
