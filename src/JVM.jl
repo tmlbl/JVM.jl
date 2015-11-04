@@ -40,19 +40,40 @@ setorigin(url::AbstractString) = begin
   pkg = namefromgit(url)
   gitcmd(pkg, "remote rm origin")
   gitcmd(pkg, "remote add origin $url")
+  gitcmd(pkg, "fetch --all")
 end
 
 # Get the current state
-function installed()
-  deps = Array{Dep,1}()
-  for p in Pkg.installed()
-     push!(deps, if p[2] == v"0.0.0-"
-       Dep(geturl(p[1]), getsha(p[1]))
-     else
-       Dep(p[1], string(p[2]))
-     end)
+function update()
+  # deps = Array{Dep,1}()
+  # for p in Pkg.installed()
+  #    push!(deps, if p[2] == v"0.0.0-"
+  #      Dep(geturl(p[1]), getsha(p[1]))
+  #    else
+  #      Dep(p[1], string(p[2]))
+  #    end)
+  # end
+  # deps
+  gitcmd("METADATA", "pull origin metadata-v2")
+  deps = getdeps()
+  for dep in deps
+    if isgit(dep.name)
+      pkg = namefromgit(dep.name)
+      gitcmd(pkg, "pull")
+      dep.version = getsha(pkg)
+    else
+      nv = v"0.0.0"
+      for v in Pkg.available(dep.name)
+        if v > VersionNumber(dep.version)
+          nv = v
+        end
+      end
+      if nv > VersionNumber(dep.version)
+        info("Updating $(dep.name) to $nv")
+        dep.version = nv
+      end
+    end
   end
-  deps
 end
 
 rmrequire() = begin
@@ -94,8 +115,8 @@ function init()
 end
 
 function freeze()
-  writedeps(installed())
-  rmrequire()
+  # writedeps(installed())
+  # rmrequire()
 end
 
 # Enforce the versions specified in JDEPS
@@ -103,8 +124,7 @@ function fix()
   for dep in getdeps()
     if isgit(dep.name)
       pkg = namefromgit(dep.name)
-      url = geturl(pkg)
-      if url != dep.name
+      if geturl(pkg) != dep.name
         setorigin(dep.name)
       end
       info("Pinning $pkg at $(dep.version)")
@@ -159,12 +179,12 @@ function install()
   fix()
 end
 
-function update()
-  mv("JDEPS", "/tmp/JDEPS.bak"; remove_destination=true)
-  Pkg.update()
-  freeze()
-  info("Local package directory updated. Run 'jvm revert' to restore the previous state")
-end
+# function update()
+#   mv("JDEPS", "/tmp/JDEPS.bak"; remove_destination=true)
+#   Pkg.update()
+#   freeze()
+#   info("Local package directory updated. Run 'jvm revert' to restore the previous state")
+# end
 
 function revert()
   mv("/tmp/JDEPS.bak", "JDEPS"; remove_destination=true)
