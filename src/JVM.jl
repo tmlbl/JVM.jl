@@ -25,17 +25,22 @@ namefromgit(url::AbstractString) = begin
   n
 end
 
-getsha(pkg::AbstractString) =
-  chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) rev-parse HEAD`))
+gitcmd(pkg::AbstractString, cmd::AbstractString) =
+    chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) $(split(cmd, ' '))`))
 
-checkout(pkg::AbstractString, sha::AbstractString) =
-  chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) checkout $sha`))
+getsha(pkg::AbstractString) = gitcmd(pkg, "rev-parse HEAD")
 
-gitclean(pkg::AbstractString) =
-  run(`$(Pkg.Git.git(Pkg.dir(pkg))) clean -dfxq`)
+checkout(pkg::AbstractString, sha::AbstractString) = gitcmd(pkg, "checkout $sha")
 
-geturl(pkg::AbstractString) =
-  chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) config --get remote.origin.url`))
+gitclean(pkg::AbstractString) = gitcmd(pkg, "clean -dfxq")
+
+geturl(pkg::AbstractString) = gitcmd(pkg, "config --get remote.origin.url")
+
+setorigin(url::AbstractString) = begin
+  pkg = namefromgit(url)
+  gitcmd(pkg, "remote rm origin")
+  gitcmd(pkg, "remote add origin $url")
+end
 
 # Get the current state
 function installed()
@@ -93,6 +98,23 @@ function freeze()
   rmrequire()
 end
 
+# Enforce the versions specified in JDEPS
+function fix()
+  for dep in getdeps()
+    if isgit(dep.name)
+      pkg = namefromgit(dep.name)
+      url = geturl(pkg)
+      if url != dep.name
+        setorigin(dep.name)
+      end
+      info("Pinning $pkg at $(dep.version)")
+      gitcmd(pkg, "reset --hard $(dep.version)")
+    else
+      Pkg.pin(dep.name, VersionNumber(dep.version))
+    end
+  end
+end
+
 function add(pkg::AbstractString, v::AbstractString)
   if isgit(pkg)
     Pkg.clone(pkg)
@@ -110,20 +132,14 @@ function install_registered(dep::Dep)
   if !isdir(Pkg.dir(dep.name))
     Pkg.add(dep.name, VersionNumber(dep.version))
   end
-  version = Pkg.installed(dep.name)
-  if version != VersionNumber(dep.version) && version != v"0.0.0-"
-    println("pinning $(dep.name) at $(dep.version)")
-    Pkg.pin(dep.name, VersionNumber(dep.version))
-  end
 end
 
 function install_unregistered(dep::Dep)
   name = namefromgit(dep.name)
-  if isdir(Pkg.dir(name))
-    checkout(namefromgit(dep.name), dep.version)
-  else
+  if !isdir(Pkg.dir(name))
     Pkg.clone(dep.name)
   end
+  Pkg.build(name)
 end
 
 function install()
@@ -140,6 +156,7 @@ function install()
       install_registered(dep)
     end
   end
+  fix()
 end
 
 function update()
