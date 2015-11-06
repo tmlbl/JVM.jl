@@ -124,6 +124,7 @@ function fix()
   for dep in getdeps()
     if isgit(dep.name)
       pkg = namefromgit(dep.name)
+      gitcmd(pkg, "fetch --all")
       if geturl(pkg) != dep.name
         setorigin(dep.name)
       end
@@ -159,7 +160,6 @@ function install_unregistered(dep::Dep)
   if !isdir(Pkg.dir(name))
     Pkg.clone(dep.name)
   end
-  Pkg.build(name)
 end
 
 function install()
@@ -177,6 +177,7 @@ function install()
     end
   end
   fix()
+  Pkg.build()
 end
 
 # function update()
