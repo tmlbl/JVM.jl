@@ -43,17 +43,7 @@ setorigin(url::AbstractString) = begin
   gitcmd(pkg, "fetch --all")
 end
 
-# Get the current state
 function update()
-  # deps = Array{Dep,1}()
-  # for p in Pkg.installed()
-  #    push!(deps, if p[2] == v"0.0.0-"
-  #      Dep(geturl(p[1]), getsha(p[1]))
-  #    else
-  #      Dep(p[1], string(p[2]))
-  #    end)
-  # end
-  # deps
   gitcmd("METADATA", "pull origin metadata-v2")
   deps = getdeps()
   for dep in deps
@@ -70,10 +60,12 @@ function update()
       end
       if nv > VersionNumber(dep.version)
         info("Updating $(dep.name) to $nv")
-        dep.version = nv
+        dep.version = string(nv)
       end
     end
   end
+  mv("JDEPS", "/tmp/JDEPS.bak"; remove_destination=true)
+  writedeps(deps)
 end
 
 rmrequire() = begin
@@ -115,8 +107,16 @@ function init()
 end
 
 function freeze()
-  # writedeps(installed())
-  # rmrequire()
+  cur_deps = getdeps()
+  deps = Array{Dep,1}()
+  for (p, v) in Pkg.installed()
+    if length(find((d) -> isgit(d.name) && namefromgit(d.name) == p, cur_deps)) > 0
+      push!(deps, Dep(geturl(p), getsha(p)))
+    else
+      push!(deps, Dep(p, string(v)))
+    end
+  end
+  writedeps(deps)
 end
 
 # Enforce the versions specified in JDEPS
@@ -179,13 +179,6 @@ function install()
   fix()
   Pkg.build()
 end
-
-# function update()
-#   mv("JDEPS", "/tmp/JDEPS.bak"; remove_destination=true)
-#   Pkg.update()
-#   freeze()
-#   info("Local package directory updated. Run 'jvm revert' to restore the previous state")
-# end
 
 function revert()
   mv("/tmp/JDEPS.bak", "JDEPS"; remove_destination=true)
