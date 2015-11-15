@@ -14,6 +14,28 @@ function __init__()
     joinpath(local_dir, "lib/v$(VERSION.major).$(VERSION.minor)")
 end
 
+# The "Dep" type
+# name: (registered) Name of package or (unregistered) git or https url
+# version: (registered) Version tag or (unregistered) branch, sha, version tag
+type Dep
+  name::AbstractString
+  version::AbstractString
+end
+
+Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
+
+# Functions for reading and writing to deps file
+
+function getdeps()
+  map((line) -> Dep(split(line)...), readlines(open("JDEPS")))
+end
+
+getdep(n::AbstractString) = find((d) -> d.name == n, getdeps())
+
+function writedeps(deps::Array{Dep})
+  write(open("JDEPS", "w"), join(map((dep) -> "$(dep.name) $(dep.version)", sort(deps)), '\n'))
+end
+
 # Utils
 
 isgit(str::AbstractString) = ismatch(r"^https|\@", str)
@@ -43,28 +65,46 @@ setorigin(url::AbstractString) = begin
   gitcmd(pkg, "fetch --all")
 end
 
+function update(dep::Dep)
+  if isgit(dep.name)
+    pkg = namefromgit(dep.name)
+    gitcmd(pkg, "pull")
+    sha = getsha(pkg)
+    if sha != dep.version
+      info("Updating $pkg to SHA $sha")
+      dep.version = sha
+    end
+  else
+    nv = v"0.0.0"
+    for v in Pkg.available(dep.name)
+      if v > VersionNumber(dep.version)
+        nv = v
+      end
+    end
+    if nv > VersionNumber(dep.version)
+      info("Updating $(dep.name) to $nv")
+      dep.version = string(nv)
+    end
+  end
+end
+
 function update()
   gitcmd("METADATA", "pull origin metadata-v2")
   deps = getdeps()
   for dep in deps
-    if isgit(dep.name)
-      pkg = namefromgit(dep.name)
-      gitcmd(pkg, "pull")
-      dep.version = getsha(pkg)
-    else
-      nv = v"0.0.0"
-      for v in Pkg.available(dep.name)
-        if v > VersionNumber(dep.version)
-          nv = v
-        end
-      end
-      if nv > VersionNumber(dep.version)
-        info("Updating $(dep.name) to $nv")
-        dep.version = string(nv)
-      end
-    end
+    update(dep)
   end
   mv("JDEPS", "/tmp/JDEPS.bak"; remove_destination=true)
+  writedeps(deps)
+end
+
+function update(name::AbstractString)
+  deps = getdeps()
+  ix = find((d) -> d.name == name || namefromgit(d.name) == name, deps)
+  if length(ix) == 0
+    error("Package $name not found")
+  end
+  update(deps[ix[1]])
   writedeps(deps)
 end
 
@@ -73,28 +113,6 @@ rmrequire() = begin
   if isfile(reqpath)
     rm(reqpath)
   end
-end
-
-# The "Dep" type
-# name: (registered) Name of package or (unregistered) git or https url
-# version: (registered) Version tag or (unregistered) branch, sha, version tag
-type Dep
-  name::AbstractString
-  version::AbstractString
-end
-
-Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
-
-# Functions for reading and writing to deps file
-
-function getdeps()
-  map((line) -> Dep(split(line)...), readlines(open("JDEPS")))
-end
-
-getdep(n::AbstractString) = find((d) -> d.name == n, getdeps())
-
-function writedeps(deps::Array{Dep})
-  write(open("JDEPS", "w"), join(map((dep) -> "$(dep.name) $(dep.version)", sort(deps)), '\n'))
 end
 
 # Commands

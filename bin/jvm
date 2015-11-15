@@ -42,7 +42,11 @@ elseif ARGS[1] == "add"
 elseif ARGS[1] == "freeze"
   JVM.freeze()
 elseif ARGS[1] == "update"
-  JVM.update()
+  if length(ARGS) == 1
+    JVM.update()
+  else
+    JVM.update(ARGS[2])
+  end
 elseif ARGS[1] == "load"
   if length(ARGS) < 2 run(`julia`) else run(`julia -L $(ARGS[2])`) end
 elseif ARGS[1] == "revert"
