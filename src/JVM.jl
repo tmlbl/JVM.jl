@@ -85,6 +85,7 @@ function update(dep::Dep)
     if nv > VersionNumber(dep.version)
       info("Updating $(dep.name) to $nv")
       dep.version = string(nv)
+      Pkg.pin(dep.name, nv)
     end
   end
 end
