@@ -33,6 +33,7 @@ end
 getdep(n::AbstractString) = find((d) -> d.name == n, getdeps())
 
 function writedeps(deps::Array{Dep})
+  mv("JDEPS", "/tmp/JDEPS.bak"; remove_destination=true)
   write(open("JDEPS", "w"), join(map((dep) -> "$(dep.name) $(dep.version)", sort(deps)), '\n'))
 end
 
@@ -94,7 +95,6 @@ function update()
   for dep in deps
     update(dep)
   end
-  mv("JDEPS", "/tmp/JDEPS.bak"; remove_destination=true)
   writedeps(deps)
 end
 
