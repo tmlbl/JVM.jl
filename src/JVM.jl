@@ -69,7 +69,11 @@ end
 function update(dep::Dep)
   if isgit(dep.name)
     pkg = namefromgit(dep.name)
-    gitcmd(pkg, "pull")
+    try
+      gitcmd(pkg, "pull")
+    catch
+      warn("Error pulling $(dep.name)")
+    end
     sha = getsha(pkg)
     if sha != dep.version
       info("Updating $pkg to SHA $sha")
@@ -156,14 +160,17 @@ function fix()
 end
 
 function add(pkg::AbstractString, v::AbstractString)
+  deps = getdeps()
   if isgit(pkg)
     Pkg.clone(pkg)
     if v != "" checkout(namefromgit(pkg), v) end
+    push!(deps, Dep(pkg, getsha(namefromgit(pkg))))
+    writedeps(deps)
   else
     if v != "" Pkg.add(pkg, VersionNumber(v)) else Pkg.add(pkg) end
     if v != "" Pkg.pin(pkg, VersionNumber(v)) else Pkg.pin(pkg) end
+    freeze()
   end
-  freeze()
 end
 
 add(pkg::AbstractString) = add(pkg, "")
