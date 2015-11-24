@@ -194,6 +194,8 @@ function install()
   end
   if !isdir(joinpath(Pkg.dir(), "METADATA"))
     init()
+  else
+    gitcmd("METADATA", "pull origin metadata-v2")
   end
   for dep in getdeps()
     if isgit(dep.name)
