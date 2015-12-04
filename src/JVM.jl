@@ -215,6 +215,8 @@ end
 
 function package()
   cp(".jdeps", "/tmp/.jdeps.pkg"; remove_destination=true)
+  run(`rm /tmp/.jdeps.pkg/v0.4/.cache`)
+  run(`rm -rf /tmp/.jdeps.pkg/.cache`)
   ENV["JULIA_PKGDIR"] = "/tmp/.jdeps.pkg"
   for p in Pkg.installed()
     gitclean(p[1])
