@@ -27,6 +27,9 @@ Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
 # Functions for reading and writing to deps file
 
 function getdeps()
+  if length(readlines(open("JDEPS"))) == 0
+    return Array{Dep,1}()
+  end
   map((line) -> Dep(split(line)...), readlines(open("JDEPS")))
 end
 
@@ -216,7 +219,7 @@ end
 function package()
   cp(".jdeps", "/tmp/.jdeps.pkg"; remove_destination=true)
   run(`rm /tmp/.jdeps.pkg/v0.4/.cache`)
-  run(`rm -rf /tmp/.jdeps.pkg/.cache`)
+  run(`rm -rf /tmp/.jdeps.pkg/.cache/*`)
   ENV["JULIA_PKGDIR"] = "/tmp/.jdeps.pkg"
   for p in Pkg.installed()
     gitclean(p[1])
