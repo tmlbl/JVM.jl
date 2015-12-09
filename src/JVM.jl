@@ -27,10 +27,13 @@ Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
 # Functions for reading and writing to deps file
 
 function getdeps()
-  if length(readlines(open("JDEPS"))) == 0
-    return Array{Dep,1}()
+  deps = Array{Dep,1}()
+  for ln in readlines(open("JDEPS"))
+    if length(ln) > 1
+      push!(deps, Dep(split(ln)...))
+    end
   end
-  map((line) -> Dep(split(line)...), readlines(open("JDEPS")))
+  deps
 end
 
 getdep(n::AbstractString) = find((d) -> d.name == n, getdeps())
