@@ -3,6 +3,12 @@ JVM: The Julia Version Manager
 
 A ridiculously simple dependency manager for Julia packages.
 
+## Installation
+```julia
+Pkg.clone("git@github.com:tmlbl/JVM.jl.git")
+Pkg.build("JVM")
+```
+
 JVM is a command-line utility that uses `Base.Pkg` to create and manage a
 localized package directory for managing explicit dependencies per-project.
 
