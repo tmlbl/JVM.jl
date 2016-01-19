@@ -45,7 +45,7 @@ end
 
 # Utils
 
-isgit(str::AbstractString) = ismatch(r"^https|\@", str)
+isgit(str::AbstractString) = ismatch(r"^https|\@|^git", str)
 
 namefromgit(url::AbstractString) = begin
   n = string(match(r"([^/]+$)", url).match)
@@ -137,12 +137,17 @@ end
 
 function freeze()
   cur_deps = getdeps()
+  avail = Pkg.available()
   deps = Array{Dep,1}()
   for (p, v) in Pkg.installed()
     if length(find((d) -> isgit(d.name) && namefromgit(d.name) == p, cur_deps)) > 0
       push!(deps, Dep(geturl(p), getsha(p)))
     else
-      push!(deps, Dep(p, string(v)))
+      if length(find((pkg) -> pkg == p, avail)) > 0
+        push!(deps, Dep(p, string(v)))
+      else
+        push!(deps, Dep(geturl(p), getsha(p)))
+      end
     end
   end
   writedeps(deps)
@@ -170,6 +175,10 @@ function add(pkg::AbstractString, v::AbstractString)
   if isdir(Pkg.dir(namefromgit(pkg)))
     warn("Replacing existing installation of $(namefromgit(pkg))")
     rm(Pkg.dir(namefromgit(pkg)); recursive=true)
+    ex = find((d) -> d.name == namefromgit(pkg), deps)
+    if length(ex) > 0
+      splice!(deps, ex[1])
+    end
   end
   if isgit(pkg)
     Pkg.clone(pkg)

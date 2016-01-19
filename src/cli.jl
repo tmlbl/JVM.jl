@@ -50,7 +50,7 @@ elseif ARGS[1] == "update"
     JVM.update(ARGS[2])
   end
 elseif ARGS[1] == "load"
-  if length(ARGS) < 2 run(`julia`) else run(`julia -L $(ARGS[2])`) end
+  if length(ARGS) < 2 run(`julia -q`) else run(`julia -q -L $(ARGS[2])`) end
 elseif ARGS[1] == "revert"
   JVM.revert()
 elseif ARGS[1] == "package"
