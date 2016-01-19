@@ -3,15 +3,17 @@ __precompile__()
 module JVM
 
 local_dir = ""
+JULIA_VERSION = ""
 
 # Localize the package directory
 function __init__()
   global local_dir = joinpath(pwd(), ".jdeps")
+  global JULIA_VERSION = "v$(VERSION.major).$(VERSION.minor)"
   info("Setting JULIA_PKGDIR to $local_dir")
   ENV["JULIA_PKGDIR"] = local_dir
   # Hack to fix the library load path.
   Base.LOAD_CACHE_PATH[1] =
-    joinpath(local_dir, "lib/v$(VERSION.major).$(VERSION.minor)")
+    joinpath(local_dir, "lib/$JULIA_VERSION")
 end
 
 # The "Dep" type
@@ -233,13 +235,17 @@ function revert()
 end
 
 function package()
+  info("Copying files...")
   cp(".jdeps", "/tmp/.jdeps.pkg"; remove_destination=true)
-  run(`rm /tmp/.jdeps.pkg/v0.4/.cache`)
+  info("Removing cache...")
+  run(`rm /tmp/.jdeps.pkg/$JULIA_VERSION/.cache`)
   run(`rm -rf /tmp/.jdeps.pkg/.cache/*`)
   ENV["JULIA_PKGDIR"] = "/tmp/.jdeps.pkg"
+  info("Cleaning package sources...")
   for p in Pkg.installed()
     gitclean(p[1])
   end
+  info("Creating tarball...")
   run(`tar -czf julia_pkgs.tar.gz -C /tmp .jdeps.pkg`)
   ENV["JULIA_PKGDIR"] = local_dir
 end

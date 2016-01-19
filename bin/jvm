@@ -1,5 +1,3 @@
 #!/bin/bash
 
-JVM_DIR=$(julia -e "print(Pkg.dir(\"JVM\"))")
-
-julia --color=yes $JVM_DIR/src/cli.jl "$@"
+julia --color=yes $(julia -e "print(Pkg.dir(\"JVM\"))")/src/cli.jl "$@"
