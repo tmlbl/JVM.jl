@@ -27,7 +27,10 @@ elseif ARGS[1] == "run"
   file = length(ARGS) > 1 ? ARGS[length(ARGS)] : ""
   if file == ""
   else
-    include(joinpath(pwd(), ARGS[2]))
+    fname = ARGS[2]
+    # Remove the JVM specific arguments.
+    splice!(ARGS, 1:2)
+    include(joinpath(pwd(), fname))
   end
 elseif ARGS[1] == "init"
   JVM.init()
