@@ -241,6 +241,9 @@ function package()
   run(`rm /tmp/.jdeps.pkg/$JULIA_VERSION/.cache`)
   run(`rm -rf /tmp/.jdeps.pkg/.cache/*`)
   ENV["JULIA_PKGDIR"] = "/tmp/.jdeps.pkg"
+  if isdir(Pkg.dir("Homebrew"))
+    rm(Pkg.dir("Homebrew"); recursive=true)
+  end
   info("Cleaning package sources...")
   for p in Pkg.installed()
     gitclean(p[1])
