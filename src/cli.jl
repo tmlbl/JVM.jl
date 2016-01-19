@@ -1,0 +1,60 @@
+
+using JVM
+
+print_help() = println(join([
+  "",
+  "install      =>  Install all dependencies",
+  "run [file]   =>  Execute a Julia file in the current context",
+  "load [file]  =>  Start the Julia REPL in the current context",
+  "init         =>  Create a local package directory",
+  "freeze       =>  Save the current state to the dependencies file",
+  "update       =>  Pull new versions of all packages",
+  "revert       =>  Restore previous state after running 'jvm update'",
+  "package      =>  Creates a tarball of unbuilt package sources",
+  "add [name or URL] [version or SHA]  =>  Add a dependency",
+  ""
+], '\n'))
+
+if length(ARGS) == 0
+  print_help()
+  exit()
+end
+
+if ARGS[1] == "install"
+  JVM.install()
+elseif ARGS[1] == "run"
+  file = length(ARGS) > 1 ? ARGS[length(ARGS)] : ""
+  if file == ""
+  else
+    fname = ARGS[2]
+    # Remove the JVM specific arguments.
+    splice!(ARGS, 1:2)
+    include(joinpath(pwd(), fname))
+  end
+elseif ARGS[1] == "init"
+  JVM.init()
+elseif ARGS[1] == "add"
+  pkg = length(ARGS) > 1 ? ARGS[2] : ""
+  version = length(ARGS) > 2 ? ARGS[3] : ""
+  if version == ""
+    JVM.add(pkg)
+  else
+    JVM.add(pkg, version)
+  end
+elseif ARGS[1] == "freeze"
+  JVM.freeze()
+elseif ARGS[1] == "update"
+  if length(ARGS) == 1
+    JVM.update()
+  else
+    JVM.update(ARGS[2])
+  end
+elseif ARGS[1] == "load"
+  if length(ARGS) < 2 run(`julia`) else run(`julia -L $(ARGS[2])`) end
+elseif ARGS[1] == "revert"
+  JVM.revert()
+elseif ARGS[1] == "package"
+  JVM.package()
+else
+  print_help()
+end

@@ -167,6 +167,10 @@ end
 
 function add(pkg::AbstractString, v::AbstractString)
   deps = getdeps()
+  if isdir(Pkg.dir(namefromgit(pkg)))
+    warn("Replacing existing installation of $(namefromgit(pkg))")
+    rm(Pkg.dir(namefromgit(pkg)); recursive=true)
+  end
   if isgit(pkg)
     Pkg.clone(pkg)
     if v != "" checkout(namefromgit(pkg), v) end
