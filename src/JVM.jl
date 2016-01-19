@@ -234,21 +234,47 @@ function revert()
   install()
 end
 
+package_dir = "/tmp/.jdeps.pkg"
+archive_name = "julia_pkgs.tar.gz"
+
 function package()
+  if isfile(archive_name)
+    rm(archive_name)
+  end
   info("Copying files...")
-  cp(".jdeps", "/tmp/.jdeps.pkg"; remove_destination=true)
-  info("Removing cache...")
-  run(`rm /tmp/.jdeps.pkg/$JULIA_VERSION/.cache`)
-  run(`rm -rf /tmp/.jdeps.pkg/.cache/*`)
-  ENV["JULIA_PKGDIR"] = "/tmp/.jdeps.pkg"
+  if isdir(package_dir)
+    rm(package_dir; recursive=true)
+  end
+  cp(".jdeps", package_dir)
+
+  info("Cleaning package sources...")
+  run(`rm $package_dir/$JULIA_VERSION/.cache`)
+  run(`rm -rf $package_dir/.cache/*`)
+
+  ENV["JULIA_PKGDIR"] = package_dir
+  # Remove Homebrew, in case we are on a Mac
   if isdir(Pkg.dir("Homebrew"))
     rm(Pkg.dir("Homebrew"); recursive=true)
   end
-  info("Cleaning package sources...")
+  # Remove all submodules, they may contain incompatible artifacts
+  cur_dir = pwd()
+  for p in readdir(Pkg.dir())
+    path = joinpath(Pkg.dir(), p)
+    if isdir(path)
+      cd(path)
+      paths = map((ln) -> split(chomp(ln)), readlines(`git submodule`))
+      for sub in paths
+        rm(joinpath(Pkg.dir(p), sub[2]); recursive=true)
+      end
+    end
+  end
+
   for p in Pkg.installed()
     gitclean(p[1])
   end
+
   info("Creating tarball...")
+  cd(cur_dir)
   run(`tar -czf julia_pkgs.tar.gz -C /tmp .jdeps.pkg`)
   ENV["JULIA_PKGDIR"] = local_dir
 end
