@@ -51,17 +51,5 @@ container to create a _Julia Virtual Machine_.
 ~$ jvm package
 ```
 
-Dockerfile:
-```dockerfile
-FROM julia:0.4.0
-
-RUN apt-get update
-RUN apt-get install -y wget build-essential libsnappy-dev
-
-ADD . /opt/src
-WORKDIR /opt/src
-RUN tar xvf julia_pkgs.tar.gz
-ENV JULIA_PKGDIR /opt/src/.jdeps.pkg
-RUN julia -e "Pkg.build()"
-ENTRYPOINT julia /opt/src/script.jl
-```
+Check out [keyval](https://github.com/tmlbl/keyval) for an example project using JVM 
+to create a containerized build.
