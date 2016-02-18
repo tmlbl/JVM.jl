@@ -245,7 +245,8 @@ function package()
   if isdir(package_dir)
     rm(package_dir; recursive=true)
   end
-  cp(".jdeps", package_dir)
+  # Shelling out because Julia cp creates issues with file modes
+  run(`cp -r .jdeps $package_dir`)
 
   info("Cleaning package sources...")
   run(`rm $package_dir/$JULIA_VERSION/.cache`)
