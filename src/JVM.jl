@@ -14,7 +14,7 @@ JULIA_VERSION = ""
 function __init__()
   global local_dir = joinpath(pwd(), ".jdeps")
   global JULIA_VERSION = "v$(VERSION.major).$(VERSION.minor)"
-  info("Setting JULIA_PKGDIR to $local_dir")
+  # info("Setting JULIA_PKGDIR to $local_dir")
   ENV["JULIA_PKGDIR"] = local_dir
   # Hack to fix the library load path.
   Base.LOAD_CACHE_PATH[1] =

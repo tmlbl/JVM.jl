@@ -15,9 +15,21 @@ print_help() = println(join([
   ""
 ], '\n'))
 
+function banner(jdeps::JVM.JDEPS)
+  names = ["Julia Version Manager", "Julia Virtual Machine"]
+  println("""
+
+[ $(rand(names)) ]
+
+Julia Version: $(jdeps.julia)
+Package Directory: $(ENV["JULIA_PKGDIR"])
+  """)
+end
+
 config = JVM.getconfig()
 
 if length(ARGS) == 0
+  banner(config)
   run(`$(JVM.getbinary(config.julia)) -q --startup-file=no`)
   exit()
 end
