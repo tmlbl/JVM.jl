@@ -15,8 +15,10 @@ print_help() = println(join([
   ""
 ], '\n'))
 
+config = JVM.getconfig()
+
 if length(ARGS) == 0
-  print_help()
+  run(`$(JVM.getbinary(config.julia)) -q --startup-file=no`)
   exit()
 end
 

@@ -2,7 +2,12 @@ __precompile__()
 
 module JVM
 
+include("util.jl")
+include("Deps.jl")
+
 local_dir = ""
+package_dir = "/tmp/.jdeps.pkg"
+archive_name = "julia_pkgs.tar.gz"
 JULIA_VERSION = ""
 
 # Localize the package directory
@@ -14,64 +19,6 @@ function __init__()
   # Hack to fix the library load path.
   Base.LOAD_CACHE_PATH[1] =
     joinpath(local_dir, "lib/$JULIA_VERSION")
-end
-
-# The "Dep" type
-# name: (registered) Name of package or (unregistered) git or https url
-# version: (registered) Version tag or (unregistered) branch, sha, version tag
-type Dep
-  name::AbstractString
-  version::AbstractString
-end
-
-Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
-
-# Functions for reading and writing to deps file
-
-function getdeps()
-  deps = Array{Dep,1}()
-  for ln in readlines(open("JDEPS"))
-    if length(ln) > 1
-      push!(deps, Dep(split(ln)...))
-    end
-  end
-  deps
-end
-
-getdep(n::AbstractString) = find((d) -> d.name == n, getdeps())
-
-function writedeps(deps::Array{Dep})
-  mv("JDEPS", "/tmp/JDEPS.bak"; remove_destination=true)
-  write(open("JDEPS", "w"), join(map((dep) -> "$(dep.name) $(dep.version)", sort(deps)), '\n'))
-end
-
-# Utils
-
-isgit(str::AbstractString) = ismatch(r"^https|\@|^git", str)
-
-namefromgit(url::AbstractString) = begin
-  n = string(match(r"([^/]+$)", url).match)
-  n = replace(n, ".jl", "")
-  n = replace(n, ".git", "")
-  n
-end
-
-gitcmd(pkg::AbstractString, cmd::AbstractString) =
-    chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) $(split(cmd, ' '))`))
-
-getsha(pkg::AbstractString) = gitcmd(pkg, "rev-parse HEAD")
-
-checkout(pkg::AbstractString, sha::AbstractString) = gitcmd(pkg, "checkout $sha")
-
-gitclean(pkg::AbstractString) = gitcmd(pkg, "clean -dfxq")
-
-geturl(pkg::AbstractString) = gitcmd(pkg, "config --get remote.origin.url")
-
-setorigin(url::AbstractString) = begin
-  pkg = namefromgit(url)
-  gitcmd(pkg, "remote rm origin")
-  gitcmd(pkg, "remote add origin $url")
-  gitcmd(pkg, "fetch --all")
 end
 
 function update(dep::Dep)
@@ -132,8 +79,8 @@ end
 
 function init()
   if !isdir(local_dir) mkdir(local_dir) end
-  if !isfile("JDEPS") touch("JDEPS") end
   Pkg.init()
+  initconfig()
   rmrequire()
 end
 
@@ -233,9 +180,6 @@ function revert()
   mv("/tmp/JDEPS.bak", "JDEPS"; remove_destination=true)
   install()
 end
-
-package_dir = "/tmp/.jdeps.pkg"
-archive_name = "julia_pkgs.tar.gz"
 
 function package()
   if isfile(archive_name)
