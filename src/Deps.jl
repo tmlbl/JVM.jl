@@ -36,7 +36,7 @@ function getbinary(v::VersionNumber)
     if isfile(bin_path) return bin_path end
     info("Installing Julia $v...")
 
-    run(`wget -O $dmg_path https://s3.amazonaws.com/julialang/bin/osx/x64/0.4/julia-$v-osx10.7+.dmg`)
+    run(`wget -O $dmg_path https://s3.amazonaws.com/julialang/bin/osx/x64/0.$(v.minor)/julia-$v-osx10.7+.dmg`)
     run(`hdiutil attach $dmg_path`)
     run(`cp -r $vol_path $archive_path`)
     run(`hdiutil detach /Volumes/Julia`)

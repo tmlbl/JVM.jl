@@ -28,9 +28,17 @@ end
 
 config = JVM.getconfig()
 
+function jcommand()
+  options = "-q --no-startup"
+  if config.julia > v"0.4.0"
+    options = "-q --startup-file=no"
+  end
+  `$(JVM.getbinary(config.julia)) $(split(options, ' '))`
+end
+
 if length(ARGS) == 0
   banner(config)
-  run(`$(JVM.getbinary(config.julia)) -q --startup-file=no`)
+  run(jcommand())
   exit()
 end
 
