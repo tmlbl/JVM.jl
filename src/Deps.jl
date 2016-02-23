@@ -26,10 +26,10 @@ Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
 # Verify or install Julia version, and get the path to the binary
 function getbinary(v::VersionNumber)
   HOME = ENV["HOME"]
+  run(`mkdir -p $HOME/.jvm/julia`)
+  archive_path = "$HOME/.jvm/julia/$v"
   @osx_only begin
-    run(`mkdir -p $HOME/.jvm/julia`)
     dmg_path = "/tmp/$v.dmg"
-    archive_path = "$HOME/.jvm/julia/$v"
     vol_path = "/Volumes/Julia/Julia-$v.app"
     bin_path = "$archive_path/Contents/Resources/julia/bin/julia"
 
@@ -44,6 +44,17 @@ function getbinary(v::VersionNumber)
     if !isfile(bin_path)
       error("Couldn't find the Julia $v executable at $bin_path")
     end
+    bin_path
+  end
+  @linux_only begin
+    bin_path = "$archive_path/bin/julia"
+    tar_path = "/tmp/julia-$v.tar.gz"
+
+    if isfile(bin_path) return bin_path end
+
+    run(`wget -O $tar_path https://julialang.s3.amazonaws.com/bin/linux/x64/0.$(v.minor)/julia-$v-linux-x86_64.tar.gz`)
+    run(`mkdir -p $archive_path`)
+    run(`tar xf $tar_path -C $archive_path --strip-components=1`)
     bin_path
   end
 end
