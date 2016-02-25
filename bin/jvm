@@ -2,8 +2,10 @@
 
 ARGS="$@"
 
+SCRIPT=`realpath ${0} | awk '{gsub(/jvm/,"cli.jl");}1'`
+
 mv ~/.juliarc.jl ~/.juliarc.jl.bak
 
-julia --color=yes $(julia -e "print(Pkg.dir(\"JVM\"))")/bin/cli.jl $ARGS
+julia --color=yes $SCRIPT $ARGS
 
 mv ~/.juliarc.jl.bak ~/.juliarc.jl
