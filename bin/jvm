@@ -1,3 +1,9 @@
 #!/bin/bash
 
-julia --color=yes $(julia -e "print(Pkg.dir(\"JVM\"))")/src/cli.jl "$@"
+ARGS="$@"
+
+mv ~/.juliarc.jl ~/.juliarc.jl.bak
+
+julia --color=yes $(julia -e "print(Pkg.dir(\"JVM\"))")/bin/cli.jl $ARGS
+
+mv ~/.juliarc.jl.bak ~/.juliarc.jl

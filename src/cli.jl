@@ -1,82 +1,52 @@
-
-using JVM
-
-print_help() = println(join([
-  "",
-  "install      =>  Install all dependencies",
-  "run [file]   =>  Execute a Julia file in the current context",
-  "load [file]  =>  Start the Julia REPL in the current context",
-  "init         =>  Create a local package directory",
-  "freeze       =>  Save the current state to the dependencies file",
-  "update       =>  Pull new versions of all packages",
-  "revert       =>  Restore previous state after running 'jvm update'",
-  "package      =>  Creates a tarball of unbuilt package sources",
-  "add [name or URL] [version or SHA]  =>  Add a dependency",
-  ""
-], '\n'))
-
-function banner(jdeps::JVM.JDEPS)
-  names = ["Julia Version Manager", "Julia Virtual Machine"]
+function banner(jdeps::JDEPS)
   println("""
 
-[ $(rand(names)) ]
+  [ $(["Julia Version Manager", "Julia Virtual Machine"][rand(Bool) ? 1 : 2]) ]
 
-Julia Version: $(jdeps.julia)
-Package Directory: $(ENV["JULIA_PKGDIR"])
+  Julia Version: $(jdeps.julia)
+  Package Directory: $(ENV["JULIA_PKGDIR"])
   """)
 end
 
-config = JVM.getconfig()
-
 function jcommand()
-  options = "-q --no-startup"
+  options = "-q --color=yes"
   if config.julia > v"0.4.0"
-    options = "-q --startup-file=no"
+    options = "-q --color=yes"
   end
-  `$(JVM.getbinary(config.julia)) $(split(options, ' '))`
+  `$(getbinary(config.julia)) $(split(options, ' '))`
 end
 
-if length(ARGS) == 0
+function jevaluate(cmd::AbstractString)
+  run(`$(jcommand()) -e \"$(split(cmd, ' '))\"`)
+end
+
+function installarg(s::UTF8String)
+  if !contains(s, "#")
+    if isgit(s)
+      return install_unregistered(Dep(s, v"0.0.0"))
+    else
+      return install_registered(Dep(s, v"0.0.0"))
+    end
+  end
+end
+
+function commandline(args::Vector{UTF8String})
+  config = JVM.getconfig()
   banner(config)
-  run(jcommand())
-  exit()
-end
 
-if ARGS[1] == "install"
-  JVM.install()
-elseif ARGS[1] == "run"
-  file = length(ARGS) > 1 ? ARGS[length(ARGS)] : ""
-  if file == ""
-  else
-    fname = ARGS[2]
-    # Remove the JVM specific arguments.
-    splice!(ARGS, 1:2)
-    include(joinpath(pwd(), fname))
+  if length(args) == 0
+    run(jcommand())
+    exit()
   end
-elseif ARGS[1] == "init"
-  JVM.init()
-elseif ARGS[1] == "add"
-  pkg = length(ARGS) > 1 ? ARGS[2] : ""
-  version = length(ARGS) > 2 ? ARGS[3] : ""
-  if version == ""
-    JVM.add(pkg)
-  else
-    JVM.add(pkg, version)
+
+  if ARGS[1] == "add"
+    for a in ARGS[2:end]
+      installarg(a)
+    end
+    exit()
   end
-elseif ARGS[1] == "freeze"
-  JVM.freeze()
-elseif ARGS[1] == "update"
-  if length(ARGS) == 1
-    JVM.update()
-  else
-    JVM.update(ARGS[2])
+
+  if ARGS[1] == "init"
+    jevaluate("Pkg.init()")
   end
-elseif ARGS[1] == "load"
-  if length(ARGS) < 2 run(`julia -q`) else run(`julia -q -L $(ARGS[2])`) end
-elseif ARGS[1] == "revert"
-  JVM.revert()
-elseif ARGS[1] == "package"
-  JVM.package()
-else
-  print_help()
 end
