@@ -21,14 +21,16 @@ include("cli.jl")
 function __init__()
   global local_dir = joinpath(pwd(), ".jvm")
   global JULIA_VERSION = "v$(VERSION.major).$(VERSION.minor)"
-  # info("Setting JULIA_PKGDIR to $local_dir")
-  ENV["JULIA_PKGDIR"] = local_dir
   # Hack to fix the library load path.
   Base.LOAD_CACHE_PATH[1] =
     joinpath(local_dir, "lib/$JULIA_VERSION")
   if isfile(CONFIG_FILE)
     global config = getconfig()
+    ENV["JULIA_PKGDIR"] = "$local_dir/$(config.julia)"
+  else
+    ENV["JULIA_PKGDIR"] = "$local_dir/$DEFAULT_VERSION"
   end
+  run(`mkdir -p $(ENV["JULIA_PKGDIR"])`)
 end
 
 end # module

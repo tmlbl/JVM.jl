@@ -5,10 +5,10 @@ end
 function banner(c::Config)
   println("""
 
-  $(colo(1))$(colo(30))[ $(colo(34))$(["Julia Version Manager", "Julia Virtual Machine"][rand(Bool) ? 1 : 2]) $(colo(30)) ]
+  $(colo(1))$(colo(30))[ $(colo(34))$(["Julia Version Manager", "Julia Virtual Machine"][rand(Bool) ? 1 : 2])$(colo(30)) ]
 
-  Julia Version: $(colo(37))$(c.julia)
-  $(colo(30))Package Directory: $(colo(37))$(ENV["JULIA_PKGDIR"])
+  Julia Version $(colo(37))$(c.julia)
+  $(colo(30))Package Directory $(colo(37))$(ENV["JULIA_PKGDIR"])$(colo(0))
   """)
 end
 
@@ -70,7 +70,11 @@ function commandline(args::Vector{UTF8String})
     exit()
   end
 
-  if args[1] == "test"
-    test()
+  if args[1] == "freeze"
+    freeze(config)
+  end
+
+  if args[1] == "install"
+    install(config)
   end
 end
