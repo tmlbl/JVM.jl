@@ -1,23 +1,31 @@
-function banner(jdeps::JDEPS)
+function colo(n::Integer)
+  return "\033[$(n)m"
+end
+
+function banner(c::Config)
   println("""
 
-  [ $(["Julia Version Manager", "Julia Virtual Machine"][rand(Bool) ? 1 : 2]) ]
+  $(colo(1))$(colo(30))[ $(colo(34))$(["Julia Version Manager", "Julia Virtual Machine"][rand(Bool) ? 1 : 2]) $(colo(30)) ]
 
-  Julia Version: $(jdeps.julia)
-  Package Directory: $(ENV["JULIA_PKGDIR"])
+  Julia Version: $(colo(37))$(c.julia)
+  $(colo(30))Package Directory: $(colo(37))$(ENV["JULIA_PKGDIR"])
   """)
 end
 
-function jcommand()
+function jcommand(c::Config)
   options = "-q --color=yes"
-  if config.julia > v"0.4.0"
+  if c.julia > v"0.4.0"
     options = "-q --color=yes"
   end
-  `$(getbinary(config.julia)) $(split(options, ' '))`
+  "JULIA_PKGDIR=$(ENV["JULIA_PKGDIR"]) $(getbinary(c.julia)) $options"
 end
 
-function jevaluate(cmd::AbstractString)
-  run(`$(jcommand()) -e \"$(split(cmd, ' '))\"`)
+function jevaluate(cfg::Config, cmd::AbstractString)
+  bashevaluate(jcommand(cfg)*" -e '$cmd'")
+end
+
+function bashevaluate(str::AbstractString)
+  run(Cmd(ByteString["bash", "-c", str]))
 end
 
 function installarg(s::UTF8String)
@@ -31,29 +39,38 @@ function installarg(s::UTF8String)
 end
 
 function commandline(args::Vector{UTF8String})
-  @show args
-  if args[1] == "init"
-    warn("initting bitvh")
-    initconfig()
-    jevaluate("Pkg.init()")
+  # Empty args (load) and init are done without loading existing config
+  if length(args) == 0 && !isfile(CONFIG_FILE)
+    info("Using default version: $DEFAULT_VERSION")
+    banner(Config())
+    bashevaluate(jcommand(Config()))
+    exit()
+  elseif length(args) > 0 && args[1] == "init"
+    if isfile(CONFIG_FILE)
+      error("Won't overwrite existing $CONFIG_FILE")
+    end
+    cfg = initconfig()
+    jevaluate(cfg, "Pkg.init()")
     exit()
   end
+
+  # Fetch existing config
   config = JVM.getconfig()
   banner(config)
 
   if length(args) == 0
-    run(jcommand())
+    bashevaluate(jcommand(config))
     exit()
   end
 
-  if ARGS[1] == "add"
+  if args[1] == "add"
     for a in ARGS[2:end]
       installarg(a)
     end
     exit()
   end
 
-  if ARGS[1] == "test"
+  if args[1] == "test"
     test()
   end
 end
