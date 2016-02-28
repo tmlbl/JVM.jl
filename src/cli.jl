@@ -41,7 +41,7 @@ end
 
 function commandline(args::Vector{UTF8String})
   # Test can be run w/o localizing the package dir
-  if args[1] == "test"
+  if length(args) > 0 && args[1] == "test"
     test(args[2:end])
     exit()
   end

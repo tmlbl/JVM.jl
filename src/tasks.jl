@@ -1,14 +1,27 @@
 function test(args)
+  test_dir = "/tmp/.jdeps.test"
+  if length(args) < 1
+    println(STDERR, "usage: \n\ttest <pkg> <?julia_version>")
+    exit(1)
+  end
   test_pkg = Pkg.dir(args[1])
-  ENV["JULIA_PKGDIR"] = "/tmp/.jdeps.test"
+  if isdir(test_dir)
+    bashevaluate("rm -rf $test_dir")
+  end
+  ENV["JULIA_PKGDIR"] = test_dir
   cfg = Config()
   if length(args) == 2
     cfg.julia = VersionNumber(args[2])
   end
-  pkg_dir = "$(ENV["JULIA_PKGDIR"])/v$(cfg.julia.major).$(cfg.julia.minor)/"
+  pkg_dir = "$(ENV["JULIA_PKGDIR"])/v$(cfg.julia.major).$(cfg.julia.minor)/$(args[1])"
 
   jevaluate(cfg, "Pkg.init()")
-  jevaluate(cfg, "Pkg.clone(\"$test_pkg\");Pkg.test(\"$(args[1])\")")
+
+  # HACK - use clone to install dependencies, then copy the most recent code
+  jevaluate(cfg, "Pkg.clone(\"$test_pkg\")")
+  bashevaluate("rm -rf $pkg_dir; cp -r $test_pkg $pkg_dir")
+
+  jevaluate(cfg, "Pkg.test(\"$(args[1])\")")
   info("Removing $(ENV["JULIA_PKGDIR"])")
   run(`rm -rf $(ENV["JULIA_PKGDIR"])`)
 end
