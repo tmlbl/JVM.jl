@@ -22,6 +22,10 @@ function install_registered(dep::Dep)
   if !isdir(Pkg.dir(dep.name))
     Pkg.add(dep.name, dep.version)
   end
+  v = Pkg.installed(dep.name)
+  if v != dep.version
+    Pkg.pin(dep.name, dep.version)
+  end
 end
 
 function install_unregistered(dep::Dep)
@@ -32,7 +36,8 @@ function install_unregistered(dep::Dep)
 end
 
 function install(cfg::Config)
-  if !isfile(ENV["JULIA_PKGDIR"]*"/$JULIA_VERSION/METADATA")
+  meta = ENV["JULIA_PKGDIR"]*"/$JULIA_VERSION/METADATA"
+  if !isdir(meta)
     jevaluate(cfg, "Pkg.init()")
   end
   for d in cfg.deps

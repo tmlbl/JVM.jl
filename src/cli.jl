@@ -28,14 +28,15 @@ function bashevaluate(str::AbstractString)
   run(Cmd(ByteString["bash", "-c", str]))
 end
 
-function installarg(s::UTF8String)
+function installarg(cfg::Config, s::UTF8String)
   if !contains(s, "#")
     if isgit(s)
-      return install_unregistered(Dep(s, v"0.0.0"))
+      jevaluate(cfg, "Pkg.clone(\"$s\")")
     else
-      return install_registered(Dep(s, v"0.0.0"))
+      jevaluate(cfg, "Pkg.add(\"$s\")")
     end
   end
+  freeze(cfg)
 end
 
 function commandline(args::Vector{UTF8String})
@@ -65,7 +66,7 @@ function commandline(args::Vector{UTF8String})
 
   if args[1] == "add"
     for a in ARGS[2:end]
-      installarg(a)
+      installarg(config, a)
     end
     exit()
   end
