@@ -2,13 +2,18 @@ function colo(n::Integer)
   return "\033[$(n)m"
 end
 
+bold = colo(1)
+thin = colo(0)
+gray = "\033[1;37m"
+blue = colo(34)
+
 function banner(c::Config)
   println("""
 
-  $(colo(1))$(colo(30))[ $(colo(34))$(["Julia Version Manager", "Julia Virtual Machine"][rand(Bool) ? 1 : 2])$(colo(30)) ]
+  $bold$gray[ $blue$(["Julia Version Manager", "Julia Virtual Machine"][rand(Bool) ? 1 : 2])$gray ]
 
-  Julia Version $(colo(37))$(c.julia)
-  $(colo(30))Package Directory $(colo(37))$(ENV["JULIA_PKGDIR"])$(colo(0))
+  $(thin)Julia Version $bold$(c.julia)
+  $(thin)Package Directory $bold$(ENV["JULIA_PKGDIR"])$(colo(0))
   """)
 end
 

@@ -23,7 +23,7 @@ function getbinary(v::VersionNumber)
     if !isfile(bin_path)
       error("Couldn't find the Julia $v executable at $bin_path")
     end
-    bin_path
+    return bin_path
   end
 
   # Linux
@@ -37,6 +37,6 @@ function getbinary(v::VersionNumber)
     run(`wget -O $tar_path https://julialang.s3.amazonaws.com/bin/linux/x64/0.$(v.minor)/julia-$v-linux-x86_64.tar.gz`)
     run(`mkdir -p $archive_path`)
     run(`tar xf $tar_path -C $archive_path --strip-components=1`)
-    bin_path
+    return bin_path
   end
 end

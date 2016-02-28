@@ -17,7 +17,7 @@ type Config
   deps::Vector{Dep}
 end
 
-Config() = Config(VERSION, Dep[])
+Config() = Config(DEFAULT_VERSION, Dep[])
 
 Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
 
