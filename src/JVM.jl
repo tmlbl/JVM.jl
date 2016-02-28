@@ -2,7 +2,7 @@ __precompile__()
 
 module JVM
 
-using JSON
+using JSON, Mustache
 
 local_dir = ""
 package_dir = "/tmp/.jdeps.pkg"
@@ -18,9 +18,7 @@ include("tasks.jl")
 include("cli.jl")
 
 # Localize the package directory
-function __init__()
-  global local_dir = joinpath(pwd(), ".jvm")
-  global JULIA_VERSION = "v$(VERSION.major).$(VERSION.minor)"
+function localize()
   # Hack to fix the library load path.
   Base.LOAD_CACHE_PATH[1] =
     joinpath(local_dir, "lib/$JULIA_VERSION")
@@ -31,6 +29,12 @@ function __init__()
     ENV["JULIA_PKGDIR"] = "$local_dir/$DEFAULT_VERSION"
   end
   run(`mkdir -p $(ENV["JULIA_PKGDIR"])`)
+end
+
+function __init__()
+  global JULIA_PKGDIR_ORIG = Pkg.dir()
+  global local_dir = joinpath(pwd(), ".jvm")
+  global JULIA_VERSION = "v$(VERSION.major).$(VERSION.minor)"
 end
 
 end # module

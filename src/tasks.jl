@@ -1,8 +1,16 @@
-# Run the tests on versions listed in config
-function test()
-  for p in config.test
-    @show p
+function test(args)
+  test_pkg = Pkg.dir(args[1])
+  ENV["JULIA_PKGDIR"] = "/tmp/.jdeps.test"
+  cfg = Config()
+  if length(args) == 2
+    cfg.julia = VersionNumber(args[2])
   end
+  pkg_dir = "$(ENV["JULIA_PKGDIR"])/v$(cfg.julia.major).$(cfg.julia.minor)/"
+
+  jevaluate(cfg, "Pkg.init()")
+  jevaluate(cfg, "Pkg.clone(\"$test_pkg\");Pkg.test(\"$(args[1])\")")
+  info("Removing $(ENV["JULIA_PKGDIR"])")
+  run(`rm -rf $(ENV["JULIA_PKGDIR"])`)
 end
 
 function freeze(cfg::Config)
@@ -47,6 +55,13 @@ function install(cfg::Config)
       install_registered(d)
     end
   end
+end
+
+docker_template =
+    Mustache.template_from_file(joinpath(Pkg.dir("JVM"), "src/Dockerfile"))
+
+function image(cfg)
+  bashevaluate("docker build -t $(cfg.image)")
 end
 
 # function update(dep::Dep)

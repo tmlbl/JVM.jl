@@ -40,6 +40,13 @@ function installarg(cfg::Config, s::UTF8String)
 end
 
 function commandline(args::Vector{UTF8String})
+  # Test can be run w/o localizing the package dir
+  if args[1] == "test"
+    test(args[2:end])
+    exit()
+  end
+
+  localize()
   # Empty args (load) and init are done without loading existing config
   if length(args) == 0 && !isfile(CONFIG_FILE)
     info("Using default version: $DEFAULT_VERSION")
@@ -56,10 +63,10 @@ function commandline(args::Vector{UTF8String})
   end
 
   # Fetch existing config
-  config = JVM.getconfig()
-  banner(config)
+  config = getconfig()
 
   if length(args) == 0
+    banner(config)
     bashevaluate(jcommand(config))
     exit()
   end
@@ -77,5 +84,9 @@ function commandline(args::Vector{UTF8String})
 
   if args[1] == "install"
     install(config)
+  end
+
+  if args[1] == "image"
+    image(config)
   end
 end
