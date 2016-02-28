@@ -1,3 +1,14 @@
+# Run the tests on versions listed in config
+function test()
+  for p in config.test
+    @show p
+  end
+end
+
+
+
+
+
 
 function update(dep::Dep)
   if isgit(dep.name)

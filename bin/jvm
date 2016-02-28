@@ -1,11 +1,17 @@
 #!/bin/bash
 
+OS=`uname`
+
 ARGS="$@"
 
-SCRIPT=`realpath ${0} | awk '{gsub(/jvm/,"cli.jl");}1'`
+if [ "$OS" = "Darwin" ]; then
+  SCRIPT=`readlink ${0} | awk '{gsub(/jvm/,"cli.jl");}1'`
+else
+  SCRIPT=`realpath ${0} | awk '{gsub(/jvm/,"cli.jl");}1'`
+fi
 
 mv ~/.juliarc.jl ~/.juliarc.jl.bak
 
-julia --color=yes $SCRIPT $ARGS
+julia -q --color=yes $SCRIPT $ARGS
 
 mv ~/.juliarc.jl.bak ~/.juliarc.jl

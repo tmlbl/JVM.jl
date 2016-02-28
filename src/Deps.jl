@@ -15,9 +15,10 @@ end
 type JDEPS
   julia::VersionNumber
   deps::Vector{Dep}
+  test::Vector{VersionNumber}
 end
 
-JDEPS() = JDEPS(VERSION, Dep[])
+JDEPS() = JDEPS(VERSION, Dep[], VersionNumber[])
 
 Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
 
@@ -44,6 +45,7 @@ function getbinary(v::VersionNumber)
     if !isfile(bin_path)
       error("Couldn't find the Julia $v executable at $bin_path")
     end
+    @show bin_path
     bin_path
   end
   @linux_only begin
@@ -63,10 +65,16 @@ function getconfig()
   js = JSON.parse(readall(open("JDEPS")))
   version = VersionNumber(js["julia"])
   deps = Array{Dep,1}()
+  tests = Array{VersionNumber,1}()
   for (n, v) in js["deps"]
     push!(deps, Dep(n, ascii(v)))
   end
-  JDEPS(version, deps)
+  if haskey(js, "test")
+    for v in js["test"]
+      push!(tests, VersionNumber(v))
+    end
+  end
+  JDEPS(version, deps, tests)
 end
 
 function writeconfig(jdeps::JDEPS)

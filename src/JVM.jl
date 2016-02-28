@@ -23,7 +23,9 @@ function __init__()
   # Hack to fix the library load path.
   Base.LOAD_CACHE_PATH[1] =
     joinpath(local_dir, "lib/$JULIA_VERSION")
-  global config = getconfig()
+  if isfile("JDEPS")
+    global config = getconfig()
+  end
 
   # rcpath = "$(ENV["HOME"])/.juliarc.jl"
   # @show rcpath

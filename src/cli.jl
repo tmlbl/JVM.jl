@@ -31,6 +31,13 @@ function installarg(s::UTF8String)
 end
 
 function commandline(args::Vector{UTF8String})
+  @show args
+  if args[1] == "init"
+    warn("initting bitvh")
+    initconfig()
+    jevaluate("Pkg.init()")
+    exit()
+  end
   config = JVM.getconfig()
   banner(config)
 
@@ -46,7 +53,7 @@ function commandline(args::Vector{UTF8String})
     exit()
   end
 
-  if ARGS[1] == "init"
-    jevaluate("Pkg.init()")
+  if ARGS[1] == "test"
+    test()
   end
 end
