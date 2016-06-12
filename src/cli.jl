@@ -29,6 +29,8 @@ function jevaluate(cfg::Config, cmd::AbstractString)
   bashevaluate(jcommand(cfg)*" -e '$cmd'")
 end
 
+jevalfile(f::AbstractString) = jevaluate(config, "include(\"$(joinpath(pwd(), f))\")")
+
 function bashevaluate(str::AbstractString)
   run(Cmd(ByteString["bash", "-c", str]))
 end
@@ -93,5 +95,21 @@ function commandline(args::Vector{UTF8String})
 
   if args[1] == "image"
     image(config)
+  end
+
+  if args[1] == "run" && length(args) > 1
+    jevaluate(config, "include(\"$(joinpath(pwd(), args[2]))\")")
+  end
+
+  # Run scripts, if relevant
+  if haskey(config.scripts, ascii(args[1]))
+    content = config.scripts[args[1]]
+    # If it's a Julia file, evaluate in JVM context
+    if isfile(content)
+      jevalfile(content)
+    else
+      # Execute bash commands
+      bashevaluate(content)
+    end
   end
 end

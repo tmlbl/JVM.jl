@@ -15,9 +15,10 @@ end
 type Config
   julia::VersionNumber
   deps::Vector{Dep}
+  scripts::Dict{AbstractString,Any}
 end
 
-Config() = Config(DEFAULT_VERSION, Dep[])
+Config() = Config(DEFAULT_VERSION, Dep[], Dict())
 
 Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
 
@@ -27,28 +28,33 @@ function getconfig()
   js = JSON.parse(readall(open(CONFIG_FILE)))
   version = VersionNumber(js["julia"])
   deps = Array{Dep,1}()
-  for (d) in js["deps"]
-    for (n, v) in d
-      if isgit(n)
-        push!(deps, Dep(n, ascii(v)))
-      else
-        push!(deps, Dep(n, VersionNumber(v)))
-      end
+  for (n, v) in js["deps"]
+    if isgit(n)
+      push!(deps, Dep(n, ascii(v)))
+    else
+      push!(deps, Dep(n, VersionNumber(v)))
     end
   end
-  Config(version, deps)
+  Config(version, deps, js["scripts"])
 end
 
 function writeconfig(jdeps::Config)
   d = Dict()
   d["julia"] = string(jdeps.julia)
-  d["deps"] = map((dep) -> Dict(dep.name => string(dep.version)), jdeps.deps)
+  d["scripts"] = jdeps.scripts
+  d["deps"] = Dict()
+  for dep in jdeps.deps
+    d["deps"][dep.name] = string(dep.version)
+  end
   js = json(d, 2)
-  write(open(CONFIG_FILE, "w"), js)
+  cfile = open(CONFIG_FILE, "w")
+  write(cfile, js)
+  close(cfile)
 end
 
 function initconfig()
   c = Config()
+  info("Creating default $CONFIG_FILE")
   writeconfig(c)
   c
 end

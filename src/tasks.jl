@@ -1,8 +1,13 @@
 function test(args)
   test_dir = "/tmp/.jdeps.test"
   if length(args) < 1
-    println(STDERR, "usage: \n\ttest <pkg> <?julia_version>")
-    exit(1)
+    if isfile("test/runtests.jl")
+      jevaluate(getconfig(), "include(\"test/runtests.jl\")")
+      exit()
+    else
+      println(STDERR, "usage: \n\ttest <pkg> <?julia_version>")
+      exit(1)
+    end
   end
   test_pkg = Pkg.dir(args[1])
   if isdir(test_dir)
