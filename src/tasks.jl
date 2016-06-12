@@ -75,25 +75,52 @@ function install(cfg::Config)
   end
 end
 
-docker_template =
-    Mustache.template_from_file(joinpath(Pkg.dir("JVM"), "src/Dockerfile"))
 
 function image(cfg)
-  install(cfg)
-  package(cfg)
+  docker_template =
+      Mustache.template_from_file(joinpath(dirname(@__FILE__), "Dockerfile"))
   Dockerfile = Mustache.render(docker_template, cfg)
-
-  if isfile("$local_dir/Dockerfile")
-    rm("$local_dir/Dockerfile")
+  dfilepath = "$local_dir/Dockerfile"
+  last_built_file = joinpath(local_dir, "last-built.json")
+  # Make sure we are not building the same base for no reason
+  should_build_base = false
+  if isfile(last_built_file)
+    last_built = getconfig(last_built_file)
+    for dep in cfg.deps
+      did_build = false
+      for built_dep in last_built.deps
+        if built_dep.version == dep.version && built_dep.name == dep.name
+          did_build = true
+        end
+      end
+      if !did_build
+        should_build_base = true
+      end
+    end
+  else
+    should_build_base = true
   end
-  f = open("$local_dir/Dockerfile", "w")
-  write(f, Dockerfile)
-  close(f)
-  base_img_name = "$(cfg.name)-base:$(cfg.version)"
-  bashevaluate("docker build -t $base_img_name -f $local_dir/Dockerfile .")
-  info("Built image $base_img_name")
-  f = open("$local_dir/$(base64encode(base_img_name))", "w")
-  
+
+  if should_build_base
+    install(cfg)
+    package(cfg)
+    if isfile(dfilepath)
+      info("Removing $dfilepath")
+      rm(dfilepath)
+    end
+    if isfile(dfilepath)
+      error("You were supposed to remove that!")
+    end
+    info("Creating $dfilepath")
+    f = open("$local_dir/Dockerfile", "w")
+    write(f, Dockerfile)
+    close(f)
+    base_img_name = "$(cfg.name)-base:$(cfg.version)"
+    bashevaluate("docker build -t $base_img_name -f $dfilepath .")
+    info("Built image $base_img_name")
+    # Store the config that was built
+    writeconfig(joinpath(local_dir, "last-built.json"), cfg)
+  end
 
   if isfile("Dockerfile")
     bashevaluate("docker build -t $(cfg.name):$(cfg.version) .")

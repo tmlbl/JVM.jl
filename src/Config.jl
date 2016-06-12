@@ -27,8 +27,8 @@ Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
 
 # Functions for reading and writing to deps file
 
-function getconfig()
-  js = JSON.parse(readall(open(CONFIG_FILE)))
+function getconfig(filepath::AbstractString)
+  js = JSON.parse(readall(open(filepath)))
   julia_version = VersionNumber(js["julia"])
   version = VersionNumber(js["version"])
 
@@ -43,7 +43,9 @@ function getconfig()
   Config(julia_version, version, js["name"], deps, js["scripts"])
 end
 
-function writeconfig(jdeps::Config)
+getconfig() = getconfig(CONFIG_FILE)
+
+function writeconfig(filepath::AbstractString, jdeps::Config)
   d = Dict()
   d["julia"] = string(jdeps.julia)
   d["version"] = string(jdeps.version)
@@ -54,10 +56,12 @@ function writeconfig(jdeps::Config)
     d["deps"][dep.name] = string(dep.version)
   end
   js = json(d, 2)
-  cfile = open(CONFIG_FILE, "w")
+  cfile = open(filepath, "w")
   write(cfile, js)
   close(cfile)
 end
+
+writeconfig(c::Config) = writeconfig(CONFIG_FILE, c)
 
 function initconfig()
   c = Config()
