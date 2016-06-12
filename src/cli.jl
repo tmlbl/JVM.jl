@@ -97,6 +97,10 @@ function commandline(args::Vector{UTF8String})
     image(config)
   end
 
+  if args[1] == "package"
+    package(config)
+  end
+
   if args[1] == "run" && length(args) > 1
     jevaluate(config, "include(\"$(joinpath(pwd(), args[2]))\")")
   end

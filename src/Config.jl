@@ -14,11 +14,14 @@ end
 
 type Config
   julia::VersionNumber
+  version::VersionNumber
+  name::AbstractString
   deps::Vector{Dep}
   scripts::Dict{AbstractString,Any}
 end
 
-Config() = Config(DEFAULT_VERSION, Dep[], Dict())
+Config() = Config(DEFAULT_VERSION, v"0.0.1", lowercase(last(split(pwd(), '/'))),
+    Dep[], Dict())
 
 Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
 
@@ -26,7 +29,9 @@ Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
 
 function getconfig()
   js = JSON.parse(readall(open(CONFIG_FILE)))
-  version = VersionNumber(js["julia"])
+  julia_version = VersionNumber(js["julia"])
+  version = VersionNumber(js["version"])
+
   deps = Array{Dep,1}()
   for (n, v) in js["deps"]
     if isgit(n)
@@ -35,12 +40,14 @@ function getconfig()
       push!(deps, Dep(n, VersionNumber(v)))
     end
   end
-  Config(version, deps, js["scripts"])
+  Config(julia_version, version, js["name"], deps, js["scripts"])
 end
 
 function writeconfig(jdeps::Config)
   d = Dict()
   d["julia"] = string(jdeps.julia)
+  d["version"] = string(jdeps.version)
+  d["name"] = jdeps.name
   d["scripts"] = jdeps.scripts
   d["deps"] = Dict()
   for dep in jdeps.deps

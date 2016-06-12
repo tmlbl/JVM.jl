@@ -5,8 +5,8 @@ module JVM
 using JSON, Mustache
 
 local_dir = ""
-package_dir = "/tmp/.jdeps.pkg"
-archive_name = "julia_pkgs.tar.gz"
+package_dir = "/tmp/.jvm"
+archive_name = ".jvm.tar.gz"
 JULIA_VERSION = ""
 const DEFAULT_VERSION = v"0.4.5"
 const CONFIG_FILE = "jvm.json"
