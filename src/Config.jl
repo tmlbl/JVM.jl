@@ -18,12 +18,13 @@ type Config
   name::AbstractString
   deps::Vector{Dep}
   scripts::Dict{AbstractString,Any}
+  baseImg::AbstractString
   preBuild::AbstractString
   postBuild::AbstractString
 end
 
 Config() = Config(DEFAULT_VERSION, v"0.0.1", lowercase(last(split(pwd(), '/'))),
-    Dep[], Dict(), "", "")
+    Dep[], Dict(), "", "", "")
 
 Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
 
@@ -43,11 +44,12 @@ function getconfig(filepath::AbstractString)
     end
   end
 
+  baseImg = haskey(js, "base-image") ? js["base-image"] : ""
   preBuild = haskey(js, "pre-build") ? join(js["pre-build"], '\n') : ""
   postBuild = haskey(js, "post-build") ? join(js["post-build"], '\n') : ""
 
   Config(julia_version, version, js["name"], deps, js["scripts"],
-      preBuild, postBuild)
+      baseImg, preBuild, postBuild)
 end
 
 getconfig() = getconfig(CONFIG_FILE)
@@ -59,6 +61,9 @@ function writeconfig(filepath::AbstractString, c::Config)
   d["name"] = c.name
   d["scripts"] = c.scripts
   d["deps"] = Dict()
+  if c.baseImg != ""
+    d["base-image"] = c.baseImg
+  end
   if c.preBuild != ""
     d["pre-build"] = split(c.preBuild, '\n')
   end

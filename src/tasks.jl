@@ -82,11 +82,16 @@ end
 function image(cfg)
   docker_template =
       Mustache.template_from_file(joinpath(dirname(@__FILE__), "Dockerfile"))
+
+  if cfg.baseImg == ""
+    cfg.baseImg = "julia:$(cfg.julia)"
+  end
   Dockerfile = Mustache.render(docker_template, cfg)
   dfilepath = "$local_dir/Dockerfile"
   last_built_file = joinpath(local_dir, "last-built.json")
   # Only rebuild base if a change has been made to config
   if isfile(last_built_file)
+    info("Checking last built...")
     last_built = readall(open(last_built_file))
     this_config = readall(open(CONFIG_FILE))
     should_build_base = last_built == this_config
@@ -103,7 +108,7 @@ function image(cfg)
     f = open("$local_dir/Dockerfile", "w")
     write(f, Dockerfile)
     close(f)
-    base_img_name = "$(cfg.name)-base:$(cfg.version)"
+    base_img_name = "$(cfg.name)-base:latest"
     bashevaluate("docker build -t $base_img_name -f $dfilepath .")
     # Squash the base image, if possible
     should_squash = true
