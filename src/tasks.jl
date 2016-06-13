@@ -59,6 +59,8 @@ function install_unregistered(dep::Dep)
   if !isdir(Pkg.dir(name))
     Pkg.clone(dep.name)
   end
+  gitcmd(name, "checkout $(dep.version) -q")
+  info("Pinned $name at $(dep.version)")
   Pkg.build(name)
 end
 
