@@ -20,10 +20,6 @@ function update_env()
     print_with_color(:yellow, "WARNING: v1 environment detected, update automatically [Y/n]? ")
     input = readline(STDIN)
     if ismatch(r"[yY]", input) || input == "\n"
-      if isdir(".jdeps")
-        info("Renaming .jdeps to .jvm")
-        run(`mv .jdeps/ .jvm/`)
-      end
       if !isfile(CONFIG_FILE)
         initconfig()
       end
@@ -33,7 +29,7 @@ function update_env()
       info("Writing $(length(ldeps)) deps to new config format...")
       writeconfig(config)
       install(config)
-      info("You may now remove JDEPS")
+      info("You may now remove JDEPS and the .jdeps/ directory")
     else
       exit()
     end
