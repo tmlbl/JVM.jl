@@ -80,11 +80,7 @@ end
 function image(cfg)
   docker_template =
       Mustache.template_from_file(joinpath(dirname(@__FILE__), "Dockerfile"))
-  Dockerfile = Mustache.render(docker_template, Dict(
-    "julia" => cfg.julia,
-    "pre-build" => if haskey(cfg._json, "pre-build"); join(cfg._json["pre-build"], '\n') else "" end,
-    "post-build" => if haskey(cfg._json, "post-build"); join(cfg._json["post-build"], '\n') else "" end
-  ))
+  Dockerfile = Mustache.render(docker_template, cfg)
   dfilepath = "$local_dir/Dockerfile"
   last_built_file = joinpath(local_dir, "last-built.json")
   # Only rebuild base if a change has been made to config
@@ -171,4 +167,10 @@ function package(cfg::Config)
   info("Creating tarball...")
   cd(cur_dir)
   run(`tar -czf $archive_name -C /tmp .jvm`)
+end
+
+
+
+function update(cfg::Config)
+  jevalfile(cfg, joinpath(dirname(@__FILE__), "../scripts/update.jl"))
 end

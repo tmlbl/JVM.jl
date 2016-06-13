@@ -1,29 +1,45 @@
-JVM: The Julia Version Manager
-==============================
+JVM: Julia Version Manager
+==========================
 
-A ridiculously simple dependency manager for Julia packages. JVM creates an
-environment similar to python's `virtualenv` by locally reassigning the package
-directory location. It also downloads and runs Julia, allowing you to
-easily switch between versions of Julia.
+The JVM is a tool for creating virtual environments in Julia and publishing
+Docker images based on them. To use it, you will want to have certain programs
+already installed, including:
 
-## Installation
+* A reasonably recent version of Julia
+* Tools necessary for Julia package installation: C compilers and tools for building
+software, like those covered by the build-essential Debian repository
+* Docker, for building images and launching containers
+* docker-squash, a pip package for removing unnecessary files from Docker images
 
-```julia
-Pkg.clone("git@github.com:tmlbl/JVM.jl.git")
-Pkg.build("JVM")
-```
+## Configuring
 
-## Usage
+A new project can be created in the current directory by running `jvm init`.
+This creates a basic configuration file, with the following properties:
 
-JVM uses a `.jvm.json` config file. Run `jvm init` to create one. It is
-structured like so:
-
-```json
+```javascript
 {
-  "deps": [],
-  "test": ["v0.3.8", "v0.3.11"],
-  "julia": "v0.3.11"
+  "deps": {
+    "AppConf": "0.1.1", // Map of dependencies to versions
+    // Can do unregistered packages as well
+    "https://github.com/tmlbl/Oanda.jl.git": "d32e3d9ee2a867cb5f7093bf8d7d8eecf5160b0d"
+  },
+  // Version of Julia the project will use to run (installed automatically)
+  "julia": "0.4.5",
+  // Project name and name of resulting Docker image
+  "name": "jvm",
+  "scripts": {
+    // This section can contain arbitrary keys with bash commands, run with jvm [cmd]
+    "bootstrap": "jvm run scripts/bootstrap.jl",
+    // If the value is the file, the file will be executed
+    "test": "test/runtests.jl"
+  },
+  // This is the version of the project itself
+  // Docker images will be tagged with this version number
+  "version": "0.0.1",
+  // Here arbitrary lines can be injected before and after the package build
+  // step when the image is created.
+  "pre-build": [
+    "RUN apt-get install libsnappy1"
+  ]
 }
 ```
-
-This will run Julia `0.3.11`.

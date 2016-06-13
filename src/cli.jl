@@ -29,7 +29,8 @@ function jevaluate(cfg::Config, cmd::AbstractString)
   bashevaluate(jcommand(cfg)*" -e '$cmd'")
 end
 
-jevalfile(f::AbstractString) = jevaluate(config, "include(\"$(joinpath(pwd(), f))\")")
+jevalfile(c::Config, f::AbstractString) = jevaluate(c, "include(\"$(joinpath(pwd(), f))\")")
+jevalfile(f::AbstractString) = jevalfile(config, f)
 
 function bashevaluate(str::AbstractString)
   run(Cmd(ByteString["bash", "-c", str]))
@@ -87,22 +88,33 @@ function commandline(args::Vector{UTF8String})
 
   if args[1] == "freeze"
     freeze(config)
+    exit()
   end
 
   if args[1] == "install"
     install(config)
+    exit()
   end
 
   if args[1] == "image"
     image(config)
+    exit()
   end
 
   if args[1] == "package"
     package(config)
+    exit()
+  end
+
+  if args[1] == "update"
+    update(config)
+    freeze(config)
+    exit()
   end
 
   if args[1] == "run" && length(args) > 1
     jevaluate(config, "include(\"$(joinpath(pwd(), args[2]))\")")
+    exit()
   end
 
   # Run scripts, if relevant
@@ -115,5 +127,16 @@ function commandline(args::Vector{UTF8String})
       # Execute bash commands
       bashevaluate(content)
     end
+  else
+    println("""
+usage: jvm [command] [options]
+
+commands:
+  init         Create a new project in the current directory
+  install      Install dependencies for the project
+  add [pkg]    Install and save a Julia package
+  freeze       Update jvm.json to match current state of project
+  image        Build an updated Docker image for the project
+    """)
   end
 end

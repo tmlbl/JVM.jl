@@ -18,11 +18,12 @@ type Config
   name::AbstractString
   deps::Vector{Dep}
   scripts::Dict{AbstractString,Any}
-  _json::Dict{Any,Any}
+  preBuild::AbstractString
+  postBuild::AbstractString
 end
 
 Config() = Config(DEFAULT_VERSION, v"0.0.1", lowercase(last(split(pwd(), '/'))),
-    Dep[], Dict(), Dict())
+    Dep[], Dict(), "", "")
 
 Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
 
@@ -41,19 +42,30 @@ function getconfig(filepath::AbstractString)
       push!(deps, Dep(n, VersionNumber(v)))
     end
   end
-  Config(julia_version, version, js["name"], deps, js["scripts"], js)
+
+  preBuild = haskey(js, "pre-build") ? join(js["pre-build"], '\n') : ""
+  postBuild = haskey(js, "post-build") ? join(js["post-build"], '\n') : ""
+
+  Config(julia_version, version, js["name"], deps, js["scripts"],
+      preBuild, postBuild)
 end
 
 getconfig() = getconfig(CONFIG_FILE)
 
-function writeconfig(filepath::AbstractString, jdeps::Config)
+function writeconfig(filepath::AbstractString, c::Config)
   d = Dict()
-  d["julia"] = string(jdeps.julia)
-  d["version"] = string(jdeps.version)
-  d["name"] = jdeps.name
-  d["scripts"] = jdeps.scripts
+  d["julia"] = string(c.julia)
+  d["version"] = string(c.version)
+  d["name"] = c.name
+  d["scripts"] = c.scripts
   d["deps"] = Dict()
-  for dep in jdeps.deps
+  if c.preBuild != ""
+    d["pre-build"] = split(c.preBuild, '\n')
+  end
+  if c.postBuild != ""
+    d["post-build"] = split(c.postBuild, '\n')
+  end
+  for dep in c.deps
     d["deps"][dep.name] = string(dep.version)
   end
   js = json(d, 2)
