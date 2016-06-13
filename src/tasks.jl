@@ -91,10 +91,9 @@ function image(cfg)
   last_built_file = joinpath(local_dir, "last-built.json")
   # Only rebuild base if a change has been made to config
   if isfile(last_built_file)
-    info("Checking last built...")
     last_built = readall(open(last_built_file))
     this_config = readall(open(CONFIG_FILE))
-    should_build_base = last_built == this_config
+    should_build_base = (last_built != this_config)
   else
     should_build_base = true
   end
@@ -124,7 +123,7 @@ function image(cfg)
     end
     info("Built image $base_img_name")
     # Store the config that was built
-    writeconfig(joinpath(local_dir, "last-built.json"), cfg)
+    cp(CONFIG_FILE, last_built_file)
   end
 
   if isfile("Dockerfile")
