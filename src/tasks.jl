@@ -59,6 +59,7 @@ function install_unregistered(dep::Dep)
   if !isdir(Pkg.dir(name))
     Pkg.clone(dep.name)
   end
+  Pkg.build(name)
 end
 
 function install(cfg::Config)
@@ -79,24 +80,18 @@ end
 function image(cfg)
   docker_template =
       Mustache.template_from_file(joinpath(dirname(@__FILE__), "Dockerfile"))
-  Dockerfile = Mustache.render(docker_template, cfg)
+  Dockerfile = Mustache.render(docker_template, Dict(
+    "julia" => cfg.julia,
+    "pre-build" => if haskey(cfg._json, "pre-build"); join(cfg._json["pre-build"], '\n') else "" end,
+    "post-build" => if haskey(cfg._json, "post-build"); join(cfg._json["post-build"], '\n') else "" end
+  ))
   dfilepath = "$local_dir/Dockerfile"
   last_built_file = joinpath(local_dir, "last-built.json")
-  # Make sure we are not building the same base for no reason
-  should_build_base = false
+  # Only rebuild base if a change has been made to config
   if isfile(last_built_file)
-    last_built = getconfig(last_built_file)
-    for dep in cfg.deps
-      did_build = false
-      for built_dep in last_built.deps
-        if built_dep.version == dep.version && built_dep.name == dep.name
-          did_build = true
-        end
-      end
-      if !did_build
-        should_build_base = true
-      end
-    end
+    last_built = readall(open(last_built_file))
+    this_config = readall(open(CONFIG_FILE))
+    should_build_base = last_built == this_config
   else
     should_build_base = true
   end
@@ -125,8 +120,6 @@ function image(cfg)
       run(`docker-squash -t $base_img_name $base_img_name`)
     end
     info("Built image $base_img_name")
-    # Tag the newly build image as latest
-    run(`docker tag $base_img_name $(cfg.name)-base:latest`)
     # Store the config that was built
     writeconfig(joinpath(local_dir, "last-built.json"), cfg)
   end
@@ -134,6 +127,8 @@ function image(cfg)
   if isfile("Dockerfile")
     bashevaluate("docker build -t $(cfg.name):$(cfg.version) .")
     info("Built image $(cfg.name):$(cfg.version)")
+    # Tag the newly built image as latest
+    run(`docker tag $(cfg.name):$(cfg.version) $(cfg.name):latest`)
   end
 end
 

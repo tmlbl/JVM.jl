@@ -11,5 +11,8 @@
   "julia": "0.4.5",
   "name": "jvm",
   "scripts": {},
-  "version": "0.0.1"
+  "version": "0.0.1",
+  "pre-build": [
+    "RUN apt-get install libsnappy1"
+  ]
 }
