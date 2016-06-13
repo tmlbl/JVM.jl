@@ -18,10 +18,11 @@ type Config
   name::AbstractString
   deps::Vector{Dep}
   scripts::Dict{AbstractString,Any}
+  _json::Dict{Any,Any}
 end
 
 Config() = Config(DEFAULT_VERSION, v"0.0.1", lowercase(last(split(pwd(), '/'))),
-    Dep[], Dict())
+    Dep[], Dict(), Dict())
 
 Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
 
@@ -40,7 +41,7 @@ function getconfig(filepath::AbstractString)
       push!(deps, Dep(n, VersionNumber(v)))
     end
   end
-  Config(julia_version, version, js["name"], deps, js["scripts"])
+  Config(julia_version, version, js["name"], deps, js["scripts"], js)
 end
 
 getconfig() = getconfig(CONFIG_FILE)

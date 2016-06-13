@@ -105,19 +105,28 @@ function image(cfg)
     install(cfg)
     package(cfg)
     if isfile(dfilepath)
-      info("Removing $dfilepath")
       rm(dfilepath)
     end
-    if isfile(dfilepath)
-      error("You were supposed to remove that!")
-    end
-    info("Creating $dfilepath")
     f = open("$local_dir/Dockerfile", "w")
     write(f, Dockerfile)
     close(f)
     base_img_name = "$(cfg.name)-base:$(cfg.version)"
     bashevaluate("docker build -t $base_img_name -f $dfilepath .")
+    # Squash the base image, if possible
+    should_squash = true
+    try
+      readall(`docker-squash -h`)
+    catch err
+      warn("docker-squash not installed. Install it for smaller image sizes.")
+      should_squash = false
+    end
+    if should_squash
+      info("Squashing $base_img_name")
+      run(`docker-squash -t $base_img_name $base_img_name`)
+    end
     info("Built image $base_img_name")
+    # Tag the newly build image as latest
+    run(`docker tag $base_img_name $(cfg.name)-base:latest`)
     # Store the config that was built
     writeconfig(joinpath(local_dir, "last-built.json"), cfg)
   end
