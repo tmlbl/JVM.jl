@@ -123,7 +123,7 @@ function image(cfg)
     end
     info("Built image $base_img_name")
     # Store the config that was built
-    cp(CONFIG_FILE, last_built_file)
+    cp(CONFIG_FILE, last_built_file; remove_destination=true)
   end
 
   if isfile("Dockerfile")
