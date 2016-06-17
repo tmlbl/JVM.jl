@@ -145,7 +145,6 @@ function package(cfg::Config)
   cp(local_dir, package_dir)
 
   info("Cleaning package sources...")
-  run(`rm $package_dir/$JULIA_VERSION/.cache`)
   run(`rm -rf $package_dir/.cache/*`)
 
   ENV["JULIA_PKGDIR"] = package_dir
