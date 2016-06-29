@@ -113,7 +113,7 @@ function commandline(args::Vector{UTF8String})
   end
 
   if args[1] == "run" && length(args) > 1
-    jevaluate(config, "include(\"$(joinpath(pwd(), args[2]))\")")
+    bashevaluate("$(jcommand(config)) $(join(args[2:end], ' '))")
     exit()
   end
 
