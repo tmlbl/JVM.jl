@@ -10,8 +10,14 @@ else
   SCRIPT=`realpath ${0} | awk '{gsub(/jvm/,"cli.jl");}1'`
 fi
 
-mv ~/.juliarc.jl ~/.juliarc.jl.bak
+JULIA_RC=$HOME/.juliarc.jl
+
+if [[ -e "$JULIA_RC" ]]; then
+  mv $JULIA_RC $JULIA_RC.bak
+fi
 
 julia -q --color=yes $SCRIPT $ARGS
 
-mv ~/.juliarc.jl.bak ~/.juliarc.jl
+if [[ -e "$JULIA_RC.bak" ]]; then
+  mv $JULIA_RC.bak $JULIA_RC
+fi
