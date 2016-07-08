@@ -34,10 +34,16 @@ end
 function freeze(cfg::Config)
   deps = Array{Dep,1}()
   for (p, v) in Pkg.installed()
-    if isgit(p)
-      push!(deps, Dep(p, getsha(p)))
-    else
+    ix = find(d -> d.name == p || namefromgit(d.name) == p, cfg.deps)
+    if length(ix) == 0
       push!(deps, Dep(p, v))
+    else
+      dep = cfg.deps[ix[1]]
+      if isgit(dep.name)
+        push!(deps, Dep(dep.name, getsha(p)))
+      else
+        push!(deps, Dep(p, v))
+      end
     end
   end
   cfg.deps = deps
@@ -59,7 +65,6 @@ function install_unregistered(dep::Dep)
   if !isdir(Pkg.dir(name))
     Pkg.clone(dep.name)
   end
-  gitcmd(name, "fetch --all -q")
   gitcmd(name, "checkout $(dep.version) -q")
   info("Pinned $name at $(dep.version)")
   Pkg.build(name)
