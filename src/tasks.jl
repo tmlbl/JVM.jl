@@ -62,6 +62,7 @@ end
 
 function install_unregistered(dep::Dep)
   name = namefromgit(dep.name)
+  gitcmd(name, "fetch --all -q")
   if !isdir(Pkg.dir(name))
     Pkg.clone(dep.name)
   end
