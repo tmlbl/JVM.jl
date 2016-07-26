@@ -1,4 +1,4 @@
-FROM jvm-base:0.0.1
+FROM jvm-base
 
 ADD src /opt/src
 

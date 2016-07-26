@@ -94,6 +94,8 @@ function image(cfg)
   if cfg.baseImg == ""
     cfg.baseImg = "julia:$(cfg.julia)"
   end
+  precomp = join(map(n -> "using $n", map(d -> namefromgit(d.name), cfg.deps)), ';')
+  cfg.postBuild *= "\nRUN julia -e \"$precomp\""
   Dockerfile = Mustache.render(docker_template, cfg)
   dfilepath = "$local_dir/Dockerfile"
   last_built_file = joinpath(local_dir, "last-built.json")
