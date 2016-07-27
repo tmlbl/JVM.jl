@@ -86,11 +86,10 @@ function install(cfg::Config)
   end
 end
 
+const docker_template =
+    Mustache.template_from_file(joinpath(dirname(@__FILE__), "Dockerfile"))
 
 function image(cfg)
-  docker_template =
-      Mustache.template_from_file(joinpath(dirname(@__FILE__), "Dockerfile"))
-
   if cfg.baseImg == ""
     cfg.baseImg = "julia:$(cfg.julia)"
   end

@@ -1,3 +1,5 @@
+# JVM banner
+
 function colo(n::Integer)
   return "\033[$(n)m"
 end
@@ -7,15 +9,19 @@ thin = colo(0)
 gray = "\033[1;37m"
 blue = colo(34)
 
+jvmtitle() = "$bold$gray[ $blue$(["Julia Version Manager", "Julia Virtual Machine"][rand(Bool) ? 1 : 2])$gray ]"
+
 function banner(c::Config)
   println("""
 
-  $bold$gray[ $blue$(["Julia Version Manager", "Julia Virtual Machine"][rand(Bool) ? 1 : 2])$gray ]
+  $(jvmtitle())
 
   $(thin)Julia Version $bold$(c.julia)
   $(thin)Package Directory $bold$(ENV["JULIA_PKGDIR"])$(colo(0))
   """)
 end
+
+# CLI utils
 
 function jcommand(c::Config)
   options = "-q --color=yes"
@@ -33,19 +39,32 @@ jevalfile(c::Config, f::AbstractString) = jevaluate(c, "include(\"$(joinpath(pwd
 jevalfile(f::AbstractString) = jevalfile(config, f)
 
 function bashevaluate(str::AbstractString)
-  run(Cmd(ByteString["bash", "-c", str]))
+  try
+    run(Cmd(ByteString["bash", "-c", str]))
+  catch err
+    exit(1)
+  end
 end
 
-function installarg(cfg::Config, s::UTF8String)
-  if !contains(s, "#")
-    if isgit(s)
-      jevaluate(cfg, "Pkg.clone(\"$s\")")
-    else
-      jevaluate(cfg, "Pkg.add(\"$s\")")
-    end
-  end
-  freeze(cfg)
-end
+# Minimal option parser to cut startup time because DocOpt is slow
+
+const JVM_DOC = """
+
+$(jvmtitle())
+
+Usage: jvm [command] [options]
+
+Commands:
+    jvm              Start a REPL in the current environment
+    jvm init         Create a new project in the current directory
+    jvm install      Install dependencies for the current project
+    jvm test <pkg>   Run tests for <pkg> in current environment
+    jvm add <pkg>    Install a package or git repo and save it to jvm.json
+    jvm freeze       Update jvm.json to match current state of project
+    jvm package      Generate a tarball of assets ready for offsite installation
+    jvm image        Build an updated Docker image for the project
+    jvm update       Run Pkg.update() and freeze results
+"""
 
 function commandline(args::Vector{UTF8String})
   # Test can be run w/o localizing the package dir
@@ -128,15 +147,6 @@ function commandline(args::Vector{UTF8String})
       bashevaluate(content)
     end
   else
-    println("""
-usage: jvm [command] [options]
-
-commands:
-  init         Create a new project in the current directory
-  install      Install dependencies for the project
-  add [pkg]    Install and save a Julia package
-  freeze       Update jvm.json to match current state of project
-  image        Build an updated Docker image for the project
-    """)
+    println(JVM_DOC)
   end
 end
