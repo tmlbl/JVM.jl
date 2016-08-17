@@ -7,7 +7,7 @@ ARGS="$@"
 if [ "$OS" = "Darwin" ]; then
   SCRIPT=`readlink ${0} | awk '{gsub(/jvm/,"cli.jl");}1'`
 else
-  SCRIPT=`realpath ${0} | awk '{gsub(/jvm/,"cli.jl");}1'`
+  SCRIPT=`readlink -f ${0} | awk '{gsub(/jvm/,"cli.jl");}1'`
 fi
 
 JULIA_RC=$HOME/.juliarc.jl
