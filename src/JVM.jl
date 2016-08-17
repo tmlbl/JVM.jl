@@ -1,8 +1,10 @@
-__precompile__()
+isdefined(:__precompile__) && __precompile__()
 
 module JVM
 
-using JSON, Mustache
+using JSON,
+      Mustache,
+      Compat
 
 local_dir = ""
 package_dir = "/tmp/.jvm"
@@ -23,18 +25,14 @@ function localize()
   if isfile(CONFIG_FILE)
     global config = getconfig()
   end
+  ENV["JULIA_PKGDIR"] = local_dir
+  global JULIA_VERSION = "v$(VERSION.major).$(VERSION.minor)"
   run(`mkdir -p $(ENV["JULIA_PKGDIR"])`)
 end
 
 function __init__()
   global JULIA_PKGDIR_ORIG = Pkg.dir()
   global local_dir = joinpath(pwd(), ".jvm")
-  ENV["JULIA_PKGDIR"] = local_dir
-  global JULIA_VERSION = "v$(VERSION.major).$(VERSION.minor)"
-  # Hack to fix the library load path
-  Base.LOAD_CACHE_PATH[1] =
-    joinpath(local_dir, "lib/$JULIA_VERSION")
-
   update_env()
 end
 

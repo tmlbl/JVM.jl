@@ -1,23 +1,36 @@
 #!/bin/bash
 
 OS=`uname`
-
 ARGS="$@"
+OS=`uname`
 
-if [ "$OS" = "Darwin" ]; then
-  SCRIPT=`readlink ${0} | awk '{gsub(/jvm/,"cli.jl");}1'`
+if [ ! -h $0 ]; then
+  a1="${0}"
 else
-  SCRIPT=`readlink -f ${0} | awk '{gsub(/jvm/,"cli.jl");}1'`
+  # Get cli.jl location
+  if [ "$OS" = "Darwin" ]; then
+    a1=`readlink ${0}`
+  else
+    a1=`readlink -f ${0}`
+  fi
 fi
 
-JULIA_RC=$HOME/.juliarc.jl
+SCRIPT=${a1/jvm/cli.jl}
+
+# Move juliarc.jl out of the way temporarily
+# TODO: Better way to handle this
+JULIA_RC="$HOME/.juliarc.jl"
 
 if [[ -e "$JULIA_RC" ]]; then
-  mv $JULIA_RC $JULIA_RC.bak
+  mv $JULIA_RC $JULIA_RC.jvm.bak
 fi
 
+# Launch JVM with julia
 julia -q --color=yes $SCRIPT $ARGS
+xit=$?
 
-if [[ -e "$JULIA_RC.bak" ]]; then
-  mv $JULIA_RC.bak $JULIA_RC
+if [[ -e "$JULIA_RC.jvm.bak" ]]; then
+  mv $JULIA_RC.jvm.bak $JULIA_RC
 fi
+
+exit $xit

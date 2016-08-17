@@ -58,7 +58,7 @@ Commands:
     jvm              Start a REPL in the current environment
     jvm init         Create a new project in the current directory
     jvm install      Install dependencies for the current project
-    jvm test <pkg>   Run tests for <pkg> in current environment
+    jvm test         Run tests: Experimental
     jvm add <pkg>    Install a package or git repo and save it to jvm.json
     jvm freeze       Update jvm.json to match current state of project
     jvm package      Generate a tarball of assets ready for offsite installation
