@@ -1,45 +1,58 @@
 JVM: Julia Version Manager
+[![Build Status](https://travis-ci.org/tmlbl/JVM.jl.svg?branch=travis)](https://travis-ci.org/tmlbl/JVM.jl)
 ==========================
 
-The JVM is a tool for creating virtual environments in Julia and publishing
-Docker images based on them. To use it, you will want to have certain programs
-already installed, including:
+The JVM is a tool for creating and working with virtual environments in Julia.
+JVM integrates with Docker to generate images for Julia applications.
+
+## Requirements
 
 * A reasonably recent version of Julia
 * Tools necessary for Julia package installation: C compilers and tools for building
 software, like those covered by the build-essential Debian repository
-* Docker, for building images and launching containers
-* docker-squash, a pip package for removing unnecessary files from Docker images
+* Docker, for building images and launching containers (optional)
+* docker-squash, a pip package for removing unnecessary files from Docker images (optional)
 
-## Configuring
+## Creating a project
 
-A new project can be created in the current directory by running `jvm init`.
-This creates a basic configuration file, with the following properties:
+Run `jvm init` to create a project in the current directory. This creates a
+JSON manifest file. You can then add dependencies like so:
 
-```javascript
-{
-  "deps": {
-    "AppConf": "0.1.1", // Map of dependencies to versions
-    // Can do unregistered packages as well
-    "https://github.com/tmlbl/Oanda.jl.git": "d32e3d9ee2a867cb5f7093bf8d7d8eecf5160b0d"
-  },
-  // Version of Julia the project will use to run (installed automatically)
-  "julia": "0.4.5",
-  // Project name and name of resulting Docker image
-  "name": "jvm",
-  "scripts": {
-    // This section can contain arbitrary keys with bash commands, run with jvm [cmd]
-    "bootstrap": "jvm run scripts/bootstrap.jl",
-    // If the value is the file, the file will be executed
-    "test": "test/runtests.jl"
-  },
-  // This is the version of the project itself
-  // Docker images will be tagged with this version number
-  "version": "0.0.1",
-  // Here arbitrary lines can be injected before and after the package build
-  // step when the image is created.
-  "pre-build": [
-    "RUN apt-get install libsnappy1"
-  ]
-}
+```bash
+$ jvm add StatsBase
+$ jvm add HttpServer 0.1.4
 ```
+
+When a project contains this manifest file, you can fetch the required packages
+by running `jvm install`.
+
+## Running commands and files
+
+Running `jvm` alone will open a REPL. Here is where you should manage your
+package versions. To save a state in the manifest, run `jvm freeze`.
+
+Use `jvm run` to evaluate Julia files in the local context.
+
+## Creating a Docker image
+
+Create a Dockerfile in your project that uses `${your_project}-base` as the
+base image. JVM builds packages and generates cache files in a separate step
+to speed up build times. Running `jvm image` will kick off the build.
+
+Additional lines can be added to the base image in the manifest file like so:
+
+```json
+
+"pre-build": [
+  "RUN apt-get install libsnappy1"
+],
+"post_build": [
+  "WORKDIR /opt"
+]
+```
+
+## Running tests
+
+Running `jvm test ${pkg_name}` will run `Pkg.test` on the default version of
+Julia in a sandbox environment for the given package. Another Julia version can
+be specified like so: `jvm test JVM 0.4.0`. This will probably change.
