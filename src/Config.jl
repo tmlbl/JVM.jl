@@ -5,7 +5,7 @@
 
 typealias SHA ASCIIString
 
-typealias DepVersion Union{SHA,VersionNumber}
+typealias DepVersion @compat Union{SHA,VersionNumber}
 
 type Dep
   name::AbstractString
