@@ -1,14 +1,13 @@
-# JVM: Julia Version Manager
-[![Build Status](https://travis-ci.org/tmlbl/JVM.jl.svg?branch=travis)](https://travis-ci.org/tmlbl/JVM.jl)
-==========================
+# JVM [![Build Status](https://travis-ci.org/tmlbl/JVM.jl.svg?branch=travis)](https://travis-ci.org/tmlbl/JVM.jl)
 
 The JVM is a tool for creating and working with virtual environments in Julia.
-JVM integrates with Docker to generate images for Julia applications.
+It manages installation of Julia versions automagically on Linux and OS X.
+JVM integrates with Docker to generate images for Julia applications, and provide
+a consistent environment for internal CI and artifact generation.
 
 ## Requirements
 
-* A reasonably recent version of Julia
-* Tools necessary for Julia package installation: C compilers and tools for building
+* Julia and tools necessary for Julia package installation: C compilers and tools for building
 software, like those covered by the build-essential Debian repository
 * Docker, for building images and launching containers (optional)
 * docker-squash, a pip package for removing unnecessary files from Docker images (optional)
