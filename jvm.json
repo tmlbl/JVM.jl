@@ -9,7 +9,7 @@
     "AppConf": "0.1.1",
     "URIParser": "0.1.3"
   },
-  "julia": "0.4.5",
+  "julia": "0.3.10",
   "name": "jvm",
   "scripts": {},
   "pre-build": [
