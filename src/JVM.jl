@@ -27,6 +27,8 @@ function localize()
   end
   ENV["JULIA_PKGDIR"] = local_dir
   global JULIA_VERSION = "v$(VERSION.major).$(VERSION.minor)"
+  # Hack to fix the library load path
+  Base.LOAD_CACHE_PATH[1] = joinpath(local_dir, "lib/$JULIA_VERSION")
   run(`mkdir -p $(ENV["JULIA_PKGDIR"])`)
 end
 
