@@ -88,10 +88,13 @@ function commandline(args::Vector{UTF8String})
     bashevaluate(jcommand(Config()))
     exit()
   elseif length(args) > 0 && args[1] == "init"
+    cfg = nothing
     if isfile(CONFIG_FILE)
-      error("Won't overwrite existing $CONFIG_FILE")
+      warn("Won't overwrite existing $CONFIG_FILE")
+      cfg = getconfig()
+    else
+      cfg = initconfig()
     end
-    cfg = initconfig()
     init(cfg)
     exit()
   end
