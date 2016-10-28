@@ -40,7 +40,7 @@ jevalfile(f::AbstractString) = jevalfile(config, f)
 
 function bashevaluate(str::AbstractString)
   try
-    run(Cmd(ByteString["bash", "-c", str]))
+    run(Cmd(BS["bash", "-c", str]))
   catch err
     exit(1)
   end

@@ -10,6 +10,8 @@ if !isdefined(:readstring)
   readstring = readall
 end
 
+typealias BS @compat(ByteString)
+
 local_dir = ""
 package_dir = "/tmp/.jvm"
 archive_name = ".jvm.tar.gz"

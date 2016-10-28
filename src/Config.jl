@@ -3,7 +3,7 @@
 # version: (registered) Version tag or (unregistered) branch, sha, version tag
 # using JSON
 
-typealias SHA ASCIIString
+typealias SHA AbstractString
 
 typealias DepVersion @compat Union{SHA,VersionNumber}
 
