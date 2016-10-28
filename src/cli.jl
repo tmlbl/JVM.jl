@@ -66,6 +66,13 @@ Commands:
     jvm update       Run Pkg.update() and freeze results
 """
 
+function init(cfg::Config)
+  meta = ENV["JULIA_PKGDIR"]*"/$JULIA_VERSION/METADATA"
+  if !isdir(meta)
+    jevaluate(cfg, "Pkg.init(); Pkg.clone(\"https://github.com/tmlbl/JVM.jl\"); Pkg.checkout(\"JVM\", \"julia5\")")
+  end
+end
+
 function commandline(args::Vector{UTF8String})
   # Test can be run w/o localizing the package dir
   if length(args) > 0 && args[1] == "test"
@@ -85,7 +92,7 @@ function commandline(args::Vector{UTF8String})
       error("Won't overwrite existing $CONFIG_FILE")
     end
     cfg = initconfig()
-    jevaluate(cfg, "Pkg.init()")
+    init(cfg)
     exit()
   end
 
@@ -100,34 +107,34 @@ function commandline(args::Vector{UTF8String})
 
   if args[1] == "add"
     for a in ARGS[2:end]
-      installarg(config, a)
+      jevaluate(config, "using JVM; JVM.localize(); JVM.freeze(JVM.getconfig(), $a)")
     end
     exit()
   end
 
   if args[1] == "freeze"
-    freeze(config)
+    jevaluate(config, "using JVM; JVM.localize(); JVM.freeze(JVM.getconfig())")
     exit()
   end
 
   if args[1] == "install"
-    install(config)
+    init(config)
+    jevaluate(config, "using JVM; JVM.localize(); JVM.install(JVM.getconfig())")
     exit()
   end
 
   if args[1] == "image"
-    image(config)
+    jevaluate(config, "using JVM; JVM.localize(); JVM.image(JVM.getconfig())")
     exit()
   end
 
   if args[1] == "package"
-    package(config)
+    jevaluate(config, "using JVM; JVM.localize(); JVM.package(JVM.getconfig())")
     exit()
   end
 
   if args[1] == "update"
-    update(config)
-    freeze(config)
+    jevaluate(config, "using JVM; JVM.localize(); JVM.update(JVM.getconfig()); JVM.freeze(JVM.getconfig())")
     exit()
   end
 

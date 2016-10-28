@@ -75,10 +75,7 @@ function install_unregistered(dep::Dep)
 end
 
 function install(cfg::Config)
-  meta = ENV["JULIA_PKGDIR"]*"/$JULIA_VERSION/METADATA"
-  if !isdir(meta)
-    jevaluate(cfg, "Pkg.init()")
-  end
+  init(cfg)
   for d in cfg.deps
     if isgit(d.name)
       install_unregistered(d)
@@ -102,8 +99,8 @@ function image(cfg)
   last_built_file = joinpath(local_dir, "last-built.json")
   # Only rebuild base if a change has been made to config
   if isfile(last_built_file)
-    last_built = readall(open(last_built_file))
-    this_config = readall(open(CONFIG_FILE))
+    last_built = readstring(open(last_built_file))
+    this_config = readstring(open(CONFIG_FILE))
     should_build_base = (last_built != this_config)
   else
     should_build_base = true
@@ -123,7 +120,7 @@ function image(cfg)
     # Squash the base image, if possible
     should_squash = true
     try
-      readall(`docker-squash -h`)
+      readstring(`docker-squash -h`)
     catch err
       warn("docker-squash not installed. Install it for smaller image sizes.")
       should_squash = false

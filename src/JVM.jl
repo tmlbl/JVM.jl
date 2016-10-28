@@ -6,6 +6,10 @@ using JSON,
       Mustache,
       Compat
 
+if !isdefined(:readstring)
+  readstring = readall
+end
+
 local_dir = ""
 package_dir = "/tmp/.jvm"
 archive_name = ".jvm.tar.gz"
@@ -26,7 +30,7 @@ function localize()
     global config = getconfig()
   end
   ENV["JULIA_PKGDIR"] = local_dir
-  global JULIA_VERSION = "v$(VERSION.major).$(VERSION.minor)"
+  global JULIA_VERSION = "v$(config.julia.major).$(config.julia.minor)"
   # Hack to fix the library load path
   Base.LOAD_CACHE_PATH[1] = joinpath(local_dir, "lib/$JULIA_VERSION")
   run(`mkdir -p $(ENV["JULIA_PKGDIR"])`)

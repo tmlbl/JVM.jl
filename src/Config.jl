@@ -31,7 +31,7 @@ Base.isless(d1::Dep, d2::Dep) = isless(d1.name, d2.name)
 # Functions for reading and writing to deps file
 
 function getconfig(filepath::AbstractString)
-  js = JSON.parse(readall(open(filepath)))
+  js = JSON.parse(readstring(open(filepath)))
   julia_version = VersionNumber(js["julia"])
   version = VersionNumber(js["version"])
 

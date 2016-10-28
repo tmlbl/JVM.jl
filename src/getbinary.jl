@@ -5,8 +5,11 @@ function getbinary(v::VersionNumber)
   run(`mkdir -p $HOME/.jvm/julia`)
   archive_path = "$HOME/.jvm/julia/$v"
 
+  # Julia changed the OS-specific macros, so let's just sniff it ourselves
+  uname = chomp(readstring(`uname`))
+
   # OS X
-  @osx_only begin
+  if uname == "Darwin"
     # We download and mount the disk image, copy everything out, then delete it.
     dmg_path = "/tmp/$v.dmg"
     vol_path = "/Volumes/Julia/Julia-$v.app"
@@ -27,7 +30,7 @@ function getbinary(v::VersionNumber)
   end
 
   # Linux
-  @linux_only begin
+  if uname == "Linux"
     # Linux is the easiest, of course
     bin_path = "$archive_path/bin/julia"
     tar_path = "/tmp/julia-$v.tar.gz"

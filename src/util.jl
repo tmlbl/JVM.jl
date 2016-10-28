@@ -9,8 +9,13 @@ namefromgit(url::AbstractString) = begin
   n
 end
 
+function build_git_command(pname)
+  pdir = Pkg.dir(pname)
+  `git --work-tree=$pdir --git-dir=$pdir/.git`
+end
+
 gitcmd(pkg::AbstractString, cmd::AbstractString) =
-    chomp(readall(`$(Pkg.Git.git(Pkg.dir(pkg))) $(split(cmd, ' '))`))
+    chomp(readstring(`$(build_git_command(Pkg.dir(pkg))) $(split(cmd, ' '))`))
 
 getsha(pkg::AbstractString) = gitcmd(pkg, "rev-parse HEAD")
 
