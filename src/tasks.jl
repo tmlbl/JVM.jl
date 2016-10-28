@@ -95,8 +95,8 @@ function image(cfg)
   if cfg.baseImg == ""
     cfg.baseImg = "julia:$(cfg.julia)"
   end
-  precomp = join(map(n -> "using $n", map(d -> namefromgit(d.name), cfg.deps)), ';')
-  cfg.postBuild *= "\nRUN julia -e \"$precomp\""
+  precomp = join(map(n -> "julia -e \"using $n\"", map(d -> namefromgit(d.name), cfg.deps)), ';')
+  cfg.postBuild *= "\nRUN $precomp\n"
   Dockerfile = Mustache.render(docker_template, cfg)
   dfilepath = "$local_dir/Dockerfile"
   last_built_file = joinpath(local_dir, "last-built.json")
@@ -156,7 +156,8 @@ function package(cfg::Config)
   cp(local_dir, package_dir)
 
   info("Cleaning package sources...")
-  run(`rm -rf $package_dir/.cache/*`)
+  run(`rm -rf $package_dir/lib`)
+  run(`rm -rf $package_dir/$JULIA_VERSION/.cache`)
 
   ENV["JULIA_PKGDIR"] = package_dir
   # Remove Homebrew, in case we are on a Mac
@@ -171,7 +172,8 @@ function package(cfg::Config)
       cd(path)
       paths = map((ln) -> split(chomp(ln)), readlines(`git submodule`))
       for sub in paths
-        rm(joinpath(Pkg.dir(p), sub[2]); recursive=true)
+        rmdir = joinpath(Pkg.dir(p), sub[2])
+        isdir(rmdir) && rm(rmdir; recursive=true)
       end
     end
   end
